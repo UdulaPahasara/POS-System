@@ -65,6 +65,6 @@ router.route('/:id')
     .delete(protect, authorize('Admin'), deleteProduct);
 
 // Specialized route just for updating inventory stock levels
-router.put('/:id/stock', protect, authorize('Admin'), adjustStock);
+router.put('/:id/stock', protect, authorize('Admin', 'Manager'), adjustStock);
 
 export default router;

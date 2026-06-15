@@ -34,8 +34,8 @@ const ReceiptDialog = ({ open, onClose, sale }) => {
                 <Box sx={{ mb: 2, textAlign: 'center' }}>
                     <Typography variant="h6">Your Store Name</Typography>
                     <Typography variant="subtitle2">{new Date(date).toLocaleString()}</Typography>
-                    {invoiceNumber && <Typography variant="caption" display="block">Invoice: {invoiceNumber}</Typography>}
-                    {customer && customer.name && <Typography variant="caption" display="block">Customer: {customer.name}</Typography>}
+                    {invoiceNumber && <Typography variant="caption" component="div">Invoice: {invoiceNumber}</Typography>}
+                    {customer && customer.name && <Typography variant="caption" component="div">Customer: {customer.name}</Typography>}
                 </Box>
                 <Box>
                     {cartItems.map((item, idx) => {
