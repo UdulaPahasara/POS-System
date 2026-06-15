@@ -1,0 +1,183 @@
+import Product from '../model/Product.js';
+import InventoryLog from '../model/InventoryLog.js';
+
+// @desc    Create a new product
+// @route   POST /api/products
+// @access  Private (Admin/Manager)
+export const createProduct = async (req, res) => {
+    try {
+        const {
+            name, category, sku, barcodeValue, brand,
+            costPrice, sellingPrice, reorderLevel, description
+        } = req.body;
+
+        // Check if SKU already exists
+        const skuExists = await Product.findOne({ sku });
+        if (skuExists) {
+            return res.status(400).json({ message: 'Product with this SKU already exists.' });
+        }
+
+        // If there's an uploaded file, store its path
+        let imageUrl = null;
+        if (req.file) {
+            imageUrl = `/uploads/${req.file.filename}`;
+        }
+
+        const product = await Product.create({
+            name, category, sku, barcodeValue, brand,
+            costPrice, sellingPrice, reorderLevel, description,
+            imageUrl,
+            discount: {
+                type: req.body.discountType || 'fixed',
+                amount: req.body.discountAmount || 0
+            }
+        });
+
+        res.status(201).json(product);
+    } catch (error) {
+        console.error('Error creating product:', error);
+        res.status(500).json({ message: 'Server error creating product', error: error.message });
+    }
+};
+
+// @desc    Get all products
+// @route   GET /api/products
+// @access  Private
+export const getProducts = async (req, res) => {
+    try {
+        // Find all products and sort by newest first
+        const products = await Product.find({}).sort({ createdAt: -1 });
+        res.json(products);
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        res.status(500).json({ message: 'Server error fetching products' });
+    }
+};
+
+// @desc    Update a product
+// @route   PUT /api/products/:id
+// @access  Private
+export const updateProduct = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        // Check if updating SKU creates a duplicate
+        if (req.body.sku && req.body.sku !== product.sku) {
+            const skuExists = await Product.findOne({ sku: req.body.sku });
+            if (skuExists) {
+                return res.status(400).json({ message: 'Product with this SKU already exists.' });
+            }
+        }
+
+        // Handle image upload if a new image is provided
+        let imageUrl = product.imageUrl;
+        if (req.file) {
+            imageUrl = `/uploads/${req.file.filename}`;
+        }
+
+        // Update fields
+        product.name = req.body.name || product.name;
+        product.category = req.body.category || product.category;
+        product.sku = req.body.sku || product.sku;
+        product.barcodeValue = req.body.barcodeValue || product.barcodeValue;
+        product.brand = req.body.brand || product.brand;
+        product.costPrice = req.body.costPrice || product.costPrice;
+        product.sellingPrice = req.body.sellingPrice || product.sellingPrice;
+        product.reorderLevel = req.body.reorderLevel || product.reorderLevel;
+        product.description = req.body.description !== undefined ? req.body.description : product.description;
+        product.stock = req.body.stock !== undefined ? req.body.stock : product.stock;
+        product.imageUrl = imageUrl;
+
+        // Update discount fields
+        if (req.body.discountType || req.body.discountAmount !== undefined) {
+            product.discount = {
+                type: req.body.discountType || (product.discount?.type || 'fixed'),
+                amount: req.body.discountAmount !== undefined ? Number(req.body.discountAmount) : (product.discount?.amount || 0)
+            };
+        }
+
+        const updatedProduct = await product.save();
+        res.json(updatedProduct);
+
+    } catch (error) {
+        console.error('Error updating product:', error);
+        res.status(500).json({ message: 'Server error updating product' });
+    }
+};
+
+// @desc    Delete a product
+// @route   DELETE /api/products/:id
+// @access  Private
+export const deleteProduct = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        await product.deleteOne();
+        res.json({ message: 'Product removed' });
+    } catch (error) {
+        console.error('Error deleting product:', error);
+        res.status(500).json({ message: 'Server error deleting product' });
+    }
+};
+
+// @desc    Adjust product stock
+// @route   PUT /api/products/:id/stock
+// @access  Private
+export const adjustStock = async (req, res) => {
+    try {
+        const { action, quantity, reason } = req.body;
+        const product = await Product.findById(req.params.id);
+
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        if (!['Add', 'Subtract', 'Set'].includes(action)) {
+            return res.status(400).json({ message: 'Invalid action. Use Add, Subtract, or Set.' });
+        }
+
+        if (quantity < 0) {
+            return res.status(400).json({ message: 'Quantity cannot be negative.' });
+        }
+
+        let newStockLevel = product.stock;
+
+        if (action === 'Add') {
+            newStockLevel += quantity;
+        } else if (action === 'Subtract') {
+            newStockLevel -= quantity;
+            if (newStockLevel < 0) newStockLevel = 0; // Prevent negative stock
+        } else if (action === 'Set') {
+            newStockLevel = quantity;
+        }
+
+        const quantityChanged = action === 'Set' ? Math.abs(newStockLevel - product.stock) : quantity;
+
+        // Create log entry
+        await InventoryLog.create({
+            product: product._id,
+            action,
+            quantityChanged,
+            newStockLevel,
+            reason: reason || 'Manual Adjustment',
+            adminUser: req.user._id // Assuming protect middleware sets req.user
+        });
+
+        // Update product stock
+        product.stock = newStockLevel;
+        await product.save();
+
+        res.json({ message: 'Stock adjusted successfully', stock: product.stock });
+    } catch (error) {
+        console.error('Error adjusting stock:', error);
+        res.status(500).json({ message: 'Server error adjusting stock' });
+    }
+};
