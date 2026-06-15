@@ -9,6 +9,7 @@ import CheckoutDialog from './CheckoutDialog';
 import CustomerSelect from './CustomerSelect';
 import ReceiptDialog from './ReceiptDialog';
 import CameraScannerDialog from './CameraScannerDialog';
+import emailjs from '@emailjs/browser';
 
 const POSLayout = () => {
     const navigate = useNavigate();
@@ -284,6 +285,52 @@ const POSLayout = () => {
                             setCheckoutOpen(false);
                             setCartItems([]);
                             setSelectedCustomer(null);
+
+                            // Send Email Receipt if Customer has email
+                            if (saleData.customer && saleData.customer.email) {
+                                const itemsHtml = saleData.cartItems.map(item => {
+                                    const hasDiscount = item.product.discount && item.product.discount.amount > 0;
+                                    const priceText = hasDiscount ? `(Discounted)` : '';
+                                    return `
+                                    <tr>
+                                        <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                                            ${item.product.name} x ${item.quantity} ${priceText}
+                                        </td>
+                                        <td style="padding: 10px; text-align: right; border-bottom: 1px solid #eee;">
+                                            LKR ${(item.product.sellingPrice * item.quantity).toFixed(2)}
+                                        </td>
+                                    </tr>
+                                    `;
+                                }).join('');
+
+                                const templateParams = {
+                                    to_email: saleData.customer.email,
+                                    to_name: saleData.customer.name,
+                                    customer_name: saleData.customer.name,
+                                    customer_email: saleData.customer.email,
+                                    invoice_number: saleData.invoice?.invoiceNumber || saleData.invoiceNumber || 'N/A',
+                                    date: new Date(saleData.date).toLocaleString(),
+                                    subtotal: saleData.subtotal.toFixed(2),
+                                    tax: saleData.tax.toFixed(2),
+                                    points_discount: (saleData.pointsRedeemed * 100).toFixed(2),
+                                    total: saleData.total.toFixed(2),
+                                    employee_name: saleData.employeeName,
+                                    items_html: itemsHtml
+                                };
+
+                                emailjs.send(
+                                    'service_xptdo89', 
+                                    'template_9ze4384', 
+                                    templateParams, 
+                                    'FGdpdlZ02HmY4dEEl'
+                                ).then((response) => {
+                                    console.log('SUCCESS!', response.status, response.text);
+                                    setSnackbar({ open: true, message: 'Receipt emailed successfully!', severity: 'success' });
+                                }).catch((err) => {
+                                    console.log('FAILED...', err);
+                                    setSnackbar({ open: true, message: 'Failed to send receipt email', severity: 'error' });
+                                });
+                            }
                         } else {
                             const errData = await response.json();
                             alert(`Checkout failed: ${errData.message || 'Unknown error'}`);
