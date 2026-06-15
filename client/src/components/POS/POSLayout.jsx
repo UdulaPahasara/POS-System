@@ -146,8 +146,10 @@ const POSLayout = () => {
     };
 
     const subtotal = cartItems.reduce((sum, item) => sum + (getDiscountedPrice(item.product) * item.quantity), 0);
-    const taxRate = 0.10; // Hardcoded 10% tax for now based on user feedback
-    const tax = subtotal * taxRate;
+    const tax = cartItems.reduce((sum, item) => {
+        const itemTaxRate = item.product.category && item.product.category.taxRate ? item.product.category.taxRate / 100 : 0;
+        return sum + (getDiscountedPrice(item.product) * item.quantity * itemTaxRate);
+    }, 0);
     const total = subtotal + tax;
 
     return (

@@ -14,7 +14,7 @@ import {
 } from '@mui/icons-material';
 import Barcode from 'react-barcode';
 
-const ProductDialog = ({ open, handleClose, formData, setFormData, handleSubmit, isEditing }) => {
+const ProductDialog = ({ open, handleClose, formData, setFormData, handleSubmit, isEditing, categories = [] }) => {
     
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -97,9 +97,9 @@ const ProductDialog = ({ open, handleClose, formData, setFormData, handleSubmit,
                                 </Grid>
                                 <Grid item xs={12} sm={4}>
                                     <TextField fullWidth label="Category" name="category" select value={formData.category} onChange={handleChange} variant="outlined" sx={{ ...inputStyles, '& .MuiFormControl-root, & .MuiInputBase-root, & .MuiSelect-select': { width: '220px' } }}>
-                                        <MenuItem value="Electronics">Electronics</MenuItem>
-                                        <MenuItem value="Clothing">Clothing</MenuItem>
-                                        <MenuItem value="Food">Food</MenuItem>
+                                        {categories.map((cat) => (
+                                            <MenuItem key={cat._id} value={cat._id}>{cat.name}</MenuItem>
+                                        ))}
                                     </TextField>
                                 </Grid>
                                 <Grid item xs={12} sm={4}>

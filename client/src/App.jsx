@@ -9,6 +9,7 @@ import CustomerList from './components/AdminDashboard/Customers/CustomerList';
 import UserList from './components/AdminDashboard/Users/UserList';
 import POSLayout from './components/POS/POSLayout';
 import ReportLayout from './components/AdminDashboard/Reports/ReportLayout';
+import CategoryList from './components/AdminDashboard/Categories/CategoryList';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
@@ -39,6 +40,7 @@ function App() {
                   <Route index element={<Navigate to="/admin/dashboard" replace />} />
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="products" element={<ProductList />} />
+                  <Route path="categories" element={<CategoryList />} />
                   <Route path="inventory" element={<InventoryLayout />} />
                   <Route path="customers" element={<CustomerList />} />
                   <Route path="reports" element={<ReportLayout />} />

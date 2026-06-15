@@ -23,6 +23,7 @@ const ProductList = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [categories, setCategories] = useState([]);
     
     // New states for Delete Dialog and Snackbar
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -34,7 +35,7 @@ const ProductList = () => {
     const [selectedBarcodeProduct, setSelectedBarcodeProduct] = useState(null);
 
     const defaultForm = {
-        name: '', sku: '', barcodeValue: '', brand: '', category: 'Electronics', 
+        name: '', sku: '', barcodeValue: '', brand: '', category: '',
         costPrice: '', sellingPrice: '', reorderLevel: '', description: '', image: '',
         discountType: 'fixed', discountAmount: 0
     };
@@ -55,8 +56,20 @@ const ProductList = () => {
         }
     };
 
+    const fetchCategories = async () => {
+        try {
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const headers = { 'Authorization': `Bearer ${token}` };
+            const catRes = await fetch('http://localhost:5000/api/categories', { headers });
+            if (catRes.ok) setCategories(await catRes.json());
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        }
+    };
+
     useEffect(() => {
         fetchProducts();
+        fetchCategories();
     }, []);
 
     const handleOpenAdd = () => {
@@ -70,6 +83,7 @@ const ProductList = () => {
         setIsEditing(true);
         setFormData({
             ...product,
+            category: product.category?._id || product.category || '',
             discountType: product.discount?.type || 'fixed',
             discountAmount: product.discount?.amount || 0
         });
@@ -264,7 +278,7 @@ const ProductList = () => {
                                 </TableCell>
                                 <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{product.sku}</TableCell>
                                 <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <Chip label={product.category} size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }} />
+                                    <Chip label={product.category?.name || product.category || 'Unknown'} size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }} />
                                 </TableCell>
                                 <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>LKR {product.sellingPrice}</TableCell>
                                 <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -298,6 +312,7 @@ const ProductList = () => {
                 setFormData={setFormData}
                 handleSubmit={handleSubmit}
                 isEditing={isEditing}
+                categories={categories}
             />
 
             {/* Delete Confirmation Dialog */}

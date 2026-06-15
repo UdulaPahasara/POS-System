@@ -19,10 +19,11 @@ export const createSale = async (req, res) => {
 
         // Verify and calculate server-side
         let calculatedSubtotal = 0;
+        let calculatedTax = 0;
         const processedItems = [];
 
         for (const item of cartItems) {
-            const product = await Product.findById(item.product._id);
+            const product = await Product.findById(item.product._id).populate('category', 'taxRate');
             if (!product) {
                 return res.status(404).json({ message: `Product ${item.product.name} not found` });
             }
@@ -66,6 +67,10 @@ export const createSale = async (req, res) => {
             const itemSubtotal = discountedPrice * item.quantity;
             calculatedSubtotal += itemSubtotal;
 
+            const itemTaxRate = product.category && product.category.taxRate ? product.category.taxRate / 100 : 0;
+            const itemTax = itemSubtotal * itemTaxRate;
+            calculatedTax += itemTax;
+
             processedItems.push({
                 product: product._id,
                 name: product.name,
@@ -73,12 +78,12 @@ export const createSale = async (req, res) => {
                 sellingPrice: price,
                 discount: discountObj,
                 discountedPrice: discountedPrice,
-                subtotal: itemSubtotal
+                subtotal: itemSubtotal,
+                tax: itemTax
             });
         }
 
-        const taxRate = 0.10; // 10%
-        const tax = calculatedSubtotal * taxRate;
+        const tax = calculatedTax;
         const total = calculatedSubtotal + tax;
 
         // Apply Loyalty Points Discount

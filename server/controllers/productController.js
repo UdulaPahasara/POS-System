@@ -45,8 +45,10 @@ export const createProduct = async (req, res) => {
 // @access  Private
 export const getProducts = async (req, res) => {
     try {
-        // Find all products and sort by newest first
-        const products = await Product.find({}).sort({ createdAt: -1 });
+        // Find all products, populate refs, and sort by newest first
+        const products = await Product.find({})
+            .populate('category', 'name taxRate')
+            .sort({ createdAt: -1 });
         res.json(products);
     } catch (error) {
         console.error('Error fetching products:', error);

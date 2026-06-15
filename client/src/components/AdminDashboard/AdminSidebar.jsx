@@ -16,7 +16,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 const navItems = [
     { title: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
-    { title: 'Catergory', icon: <CategoryIcon />, path: '/admin/category' },
+    { title: 'Categories', icon: <CategoryIcon />, path: '/admin/categories' },
     { title: 'Products', icon: <ProductIcon/>, path: '/admin/products', adminOnly: true },
     { title: 'Inventory', icon: <InventoryIcon />, path: '/admin/inventory' },
     { title: 'Reports', icon: <AssessmentIcon />, path: '/admin/reports' },
@@ -56,7 +56,11 @@ const AdminSidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
             height: '100%', 
             display: 'flex', 
             flexDirection: 'column',
-            borderRight: '1px solid rgba(255,255,255,0.05)'
+            borderRight: '1px solid rgba(255,255,255,0.05)',
+            overflowY: 'auto',
+            '&::-webkit-scrollbar': { display: 'none' },
+            msOverflowStyle: 'none',
+            scrollbarWidth: 'none'
         }}>
             <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography 

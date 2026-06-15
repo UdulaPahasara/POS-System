@@ -12,6 +12,7 @@ import saleRoutes from './routes/saleRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js';
 import path from 'path';
 
 // Load environment variables
@@ -36,6 +37,7 @@ app.use('/api/sales', saleRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // Add a basic route to test server status
 app.get('/', (req, res) => {
