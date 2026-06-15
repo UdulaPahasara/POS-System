@@ -130,9 +130,21 @@ export const createSale = async (req, res) => {
 
         const createdSale = await sale.save();
 
+        // Generate Auto-incrementing Invoice Number (e.g. 0000000000001)
+        const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 });
+        let nextInvoiceNum = 1;
+        
+        if (lastInvoice && lastInvoice.invoiceNumber) {
+            const match = lastInvoice.invoiceNumber.match(/\d+$/);
+            if (match) {
+                nextInvoiceNum = parseInt(match[0], 10) + 1;
+            }
+        }
+        const invoiceNumberStr = nextInvoiceNum.toString().padStart(13, '0');
+
         // Create Invoice
         const invoice = new Invoice({
-            invoiceNumber: `INV-${Date.now()}`,
+            invoiceNumber: invoiceNumberStr,
             total: finalTotal,
             sale: createdSale._id
         });
