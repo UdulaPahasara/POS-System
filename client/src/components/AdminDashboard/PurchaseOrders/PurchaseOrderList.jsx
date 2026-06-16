@@ -130,6 +130,53 @@ const PurchaseOrderList = () => {
                 )}
             </Box>
 
+            {/* Low Stock Suggestions */}
+            {canCreate && products.filter(p => p.stock <= p.reorderLevel).length > 0 && (
+                <Box sx={{ mb: 4 }}>
+                    <Typography variant="subtitle1" sx={{ color: '#f59e0b', fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        ⚠️ Low Stock Suggestions (Needs Reordering)
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 1, '&::-webkit-scrollbar': { height: 6, bgcolor: 'rgba(255,255,255,0.05)' }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(245, 158, 11, 0.5)', borderRadius: 3 } }}>
+                        {products.filter(p => p.stock <= p.reorderLevel).map(p => (
+                            <Paper 
+                                key={p._id}
+                                sx={{ 
+                                    minWidth: 220, 
+                                    p: 2, 
+                                    bgcolor: 'rgba(245, 158, 11, 0.05)', 
+                                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                                    borderRadius: 3,
+                                    flexShrink: 0
+                                }}
+                            >
+                                <Typography variant="body1" sx={{ color: '#fff', fontWeight: 600, mb: 0.5 }} noWrap>{p.name}</Typography>
+                                <Typography variant="body2" sx={{ color: '#94a3b8', mb: 1.5 }}>
+                                    Stock: <span style={{ color: '#f87171', fontWeight: 700 }}>{p.stock}</span> • Reorder: {p.reorderLevel}
+                                </Typography>
+                                <Button 
+                                    size="small" 
+                                    variant="outlined" 
+                                    sx={{ 
+                                        color: '#f59e0b', 
+                                        borderColor: '#f59e0b', 
+                                        textTransform: 'none', 
+                                        fontWeight: 600,
+                                        borderRadius: 2,
+                                        '&:hover': { borderColor: '#d97706', bgcolor: 'rgba(245,158,11,0.1)', color: '#d97706' } 
+                                    }}
+                                    onClick={() => {
+                                        setOpenAdd(true);
+                                        setSelectedProduct(p._id);
+                                    }}
+                                >
+                                    + Create PO
+                                </Button>
+                            </Paper>
+                        ))}
+                    </Box>
+                </Box>
+            )}
+
             <TableContainer component={Paper} sx={{ bgcolor: '#1e293b' }}>
                 <Table>
                     <TableHead>
