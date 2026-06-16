@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Typography, TextField, InputAdornment, Grid, Card, CardContent, CardMedia, Chip } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 
-const ProductGrid = ({ products, onAddToCart }) => {
+const ProductGrid = ({ products, onAddToCart, customerSelectorNode }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
 
@@ -48,6 +48,13 @@ const ProductGrid = ({ products, onAddToCart }) => {
                     }}
                 />
             </Box>
+
+            {/* Customer Selector Block */}
+            {customerSelectorNode && (
+                <Box sx={{ mb: 3 }}>
+                    {customerSelectorNode}
+                </Box>
+            )}
 
             {/* Category Chips */}
             <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', mb: 3, pb: 1, '&::-webkit-scrollbar': { height: 6 } }}>

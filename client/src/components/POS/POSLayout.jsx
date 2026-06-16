@@ -3,6 +3,10 @@ import { Box, Typography, Button, IconButton, TextField, InputAdornment, Snackba
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import PersonIcon from '@mui/icons-material/Person';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import ClearIcon from '@mui/icons-material/Clear';
+import LogoutIcon from '@mui/icons-material/Logout';
 import ProductGrid from './ProductGrid';
 import Cart from './Cart';
 import CheckoutDialog from './CheckoutDialog';
@@ -54,9 +58,19 @@ const POSLayout = () => {
     }, []);
 
     const addToCart = (product) => {
+        const existing = cartItems.find(item => item.product._id === product._id);
+        if (existing && existing.quantity >= product.stock) {
+            setSnackbar({ open: true, message: `Cannot add more ${product.name}. Only ${product.stock} in stock.`, severity: 'warning' });
+            return false;
+        }
+        if (!existing && product.stock <= 0) {
+            setSnackbar({ open: true, message: `${product.name} is out of stock.`, severity: 'warning' });
+            return false;
+        }
+
         setCartItems(prev => {
-            const existing = prev.find(item => item.product._id === product._id);
-            if (existing) {
+            const existingInPrev = prev.find(item => item.product._id === product._id);
+            if (existingInPrev) {
                 return prev.map(item => 
                     item.product._id === product._id 
                         ? { ...item, quantity: item.quantity + 1 } 
@@ -65,16 +79,25 @@ const POSLayout = () => {
             }
             return [...prev, { product, quantity: 1, discount: 0 }];
         });
+        return true;
     };
 
     const updateQuantity = (productId, delta) => {
-        setCartItems(prev => prev.map(item => {
-            if (item.product._id === productId) {
-                const newQty = item.quantity + delta;
-                return newQty > 0 ? { ...item, quantity: newQty } : item;
+        const item = cartItems.find(i => i.product._id === productId);
+        if (item) {
+            const newQty = item.quantity + delta;
+            if (delta > 0 && newQty > item.product.stock) {
+                setSnackbar({ open: true, message: `Cannot add more ${item.product.name}. Only ${item.product.stock} in stock.`, severity: 'warning' });
+                return;
             }
-            return item;
-        }));
+            
+            setCartItems(prev => prev.map(i => {
+                if (i.product._id === productId) {
+                    return newQty > 0 ? { ...i, quantity: newQty } : i;
+                }
+                return i;
+            }));
+        }
     };
 
     const removeItem = (productId) => {
@@ -127,8 +150,10 @@ const POSLayout = () => {
         );
 
         if (product) {
-            addToCart(product);
-            setSnackbar({ open: true, message: `Added ${product.name} to cart.`, severity: 'success' });
+            const added = addToCart(product);
+            if (added) {
+                setSnackbar({ open: true, message: `Added ${product.name} to cart.`, severity: 'success' });
+            }
             setManualBarcode(''); // clear input if it was manual
         } else {
             setSnackbar({ open: true, message: `Product not found for barcode: ${barcode}`, severity: 'error' });
@@ -198,22 +223,14 @@ const POSLayout = () => {
                         </Button>
                     </Box>
 
-                    {/* Customer selector */}
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        size="small"
-                        onClick={() => setCustomerDialogOpen(true)}
-                        sx={{ mx: 1, textTransform: 'none' }}
-                    >
-                        {selectedCustomer ? selectedCustomer.name : 'Select Customer'}
-                    </Button>
+                    {/* Logout */}
                     <Button 
                         variant="outlined" 
                         color="error" 
                         size="small"
                         onClick={handleLogout}
-                        sx={{ textTransform: 'none', borderRadius: 2 }}
+                        startIcon={<LogoutIcon />}
+                        sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600 }}
                     >
                         Logout
                     </Button>
@@ -221,7 +238,44 @@ const POSLayout = () => {
                 
                 {/* Main Product Area */}
                 <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
-                    <ProductGrid products={products} onAddToCart={addToCart} />
+                    <ProductGrid 
+                        products={products} 
+                        onAddToCart={(prod) => {
+                            const added = addToCart(prod);
+                            if (added) {
+                                setSnackbar({ open: true, message: `Added ${prod.name} to cart.`, severity: 'success' });
+                            }
+                        }} 
+                        customerSelectorNode={
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'rgba(59, 130, 246, 0.05)', p: 1.5, borderRadius: 3, border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                    {selectedCustomer ? <PersonIcon sx={{ color: '#60a5fa' }} /> : <PersonAddIcon sx={{ color: '#94a3b8' }} />}
+                                    <Typography sx={{ color: selectedCustomer ? '#fff' : '#94a3b8', fontWeight: 600, fontSize: '1.1rem' }}>
+                                        {selectedCustomer ? `Customer: ${selectedCustomer.name}` : 'Guest Checkout'}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Button
+                                        variant={selectedCustomer ? "outlined" : "contained"}
+                                        color="primary"
+                                        onClick={() => setCustomerDialogOpen(true)}
+                                        sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600 }}
+                                    >
+                                        {selectedCustomer ? 'Change Customer' : 'Select or Add Customer'}
+                                    </Button>
+                                    {selectedCustomer && (
+                                        <Button 
+                                            color="error" 
+                                            onClick={() => setSelectedCustomer(null)}
+                                            sx={{ ml: 1, textTransform: 'none', fontWeight: 600 }}
+                                        >
+                                            Clear
+                                        </Button>
+                                    )}
+                                </Box>
+                            </Box>
+                        }
+                    />
                 </Box>
             </Box>
 
