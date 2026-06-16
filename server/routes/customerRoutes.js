@@ -9,7 +9,7 @@ router.route('/')
     .post(protect, authorize('Admin', 'Manager', 'Cashier'), createCustomer);
 
 router.route('/:id')
-    .put(protect, authorize('Admin', 'Manager'), updateCustomer)
+    .put(protect, authorize('Admin', 'Manager', 'Cashier'), updateCustomer)
     .delete(protect, authorize('Admin', 'Manager'), deleteCustomer);
 
 export default router;

@@ -318,10 +318,25 @@ export const getProductReport = async (req, res) => {
 // @access  Private (Admin)
 export const getCustomerReport = async (req, res) => {
     try {
+        const allCustomers = await Customer.find({});
         const sales = await Sale.find({ "customer.name": { $exists: true, $ne: null } });
         
         const customerStats = {};
         
+        // Initialize all registered customers
+        allCustomers.forEach(c => {
+            const cid = c.phone || c.email || c.name;
+            customerStats[cid] = {
+                id: cid,
+                name: c.name,
+                email: c.email || 'N/A',
+                phone: c.phone || 'N/A',
+                totalPurchases: 0,
+                totalSpent: 0
+            };
+        });
+        
+        // Add sales data
         sales.forEach(sale => {
             if (sale.customer && sale.customer.name) {
                 const cid = sale.customer.phone || sale.customer.email || sale.customer.name;
@@ -340,7 +355,7 @@ export const getCustomerReport = async (req, res) => {
             }
         });
 
-        const topCustomers = Object.values(customerStats).sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 10);
+        const topCustomers = Object.values(customerStats).sort((a, b) => b.totalSpent - a.totalSpent || a.name.localeCompare(b.name));
 
         res.json({
             topCustomers
