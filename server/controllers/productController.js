@@ -26,6 +26,7 @@ export const createProduct = async (req, res) => {
         const product = await Product.create({
             name, category, sku, barcodeValue, brand,
             costPrice, sellingPrice, reorderLevel, description,
+            stock: req.body.stock || 0,
             imageUrl,
             discount: {
                 type: req.body.discountType || 'fixed',
