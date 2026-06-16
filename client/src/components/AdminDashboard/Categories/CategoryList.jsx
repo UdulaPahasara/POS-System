@@ -13,7 +13,7 @@ const CategoryList = () => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentId, setCurrentId] = useState(null);
-    const [formData, setFormData] = useState({ name: '', description: '', taxRate: 0 });
+    const [formData, setFormData] = useState({ name: '', description: '', taxRate: '' });
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     const fetchCategories = async () => {
@@ -39,11 +39,11 @@ const CategoryList = () => {
         if (category) {
             setIsEditing(true);
             setCurrentId(category._id);
-            setFormData({ name: category.name, description: category.description || '', taxRate: category.taxRate || 0 });
+            setFormData({ name: category.name, description: category.description || '', taxRate: category.taxRate !== undefined ? category.taxRate : '' });
         } else {
             setIsEditing(false);
             setCurrentId(null);
-            setFormData({ name: '', description: '', taxRate: 0 });
+            setFormData({ name: '', description: '', taxRate: '' });
         }
         setDialogOpen(true);
     };
@@ -141,40 +141,66 @@ const CategoryList = () => {
             </TableContainer>
 
             {/* Add/Edit Dialog */}
-            <Dialog open={dialogOpen} onClose={handleClose} PaperProps={{ sx: { bgcolor: '#1e293b', color: '#fff', minWidth: '400px' } }}>
-                <DialogTitle>{isEditing ? 'Edit Category' : 'Add Category'}</DialogTitle>
-                <DialogContent>
+            <Dialog 
+                open={dialogOpen} 
+                onClose={handleClose} 
+                sx={{
+                    '& .MuiDialog-paper': {
+                        bgcolor: '#0f172a',
+                        color: '#fff',
+                        borderRadius: 3,
+                        minWidth: '400px',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                    }
+                }}
+            >
+                <DialogTitle sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 600 }}>
+                    {isEditing ? 'Edit Category' : 'Add Category'}
+                </DialogTitle>
+                <DialogContent sx={{ pt: 3 }}>
                     <TextField 
                         fullWidth margin="dense" label="Category Name" 
                         value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        sx={{ input: { color: '#fff' }, label: { color: '#94a3b8' }, mt: 2 }}
+                        sx={inputStyles}
                     />
                     <TextField 
                         fullWidth margin="dense" label="Description" multiline rows={3}
                         value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})}
-                        sx={{ textarea: { color: '#fff' }, label: { color: '#94a3b8' }, mt: 2 }}
+                        sx={{ ...inputStyles, mt: 2 }}
                     />
                     <TextField 
                         fullWidth margin="dense" label="Tax Rate (%)" type="number"
-                        value={formData.taxRate} onChange={(e) => setFormData({...formData, taxRate: Number(e.target.value)})}
-                        sx={{ input: { color: '#fff' }, label: { color: '#94a3b8' }, mt: 2 }}
+                        value={formData.taxRate} onChange={(e) => setFormData({...formData, taxRate: e.target.value})}
+                        sx={{ ...inputStyles, mt: 2 }}
                     />
                 </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={handleClose} sx={{ color: '#94a3b8' }}>Cancel</Button>
-                    <Button onClick={handleSubmit} variant="contained" sx={{ bgcolor: '#3b82f6' }}>Save</Button>
+                <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <Button onClick={handleClose} sx={{ color: '#94a3b8', textTransform: 'none' }}>Cancel</Button>
+                    <Button onClick={handleSubmit} variant="contained" sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' }, textTransform: 'none' }}>Save</Button>
                 </DialogActions>
             </Dialog>
 
             {/* Delete Dialog */}
-            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} PaperProps={{ sx: { bgcolor: '#1e293b', color: '#fff' } }}>
+            <Dialog 
+                open={deleteDialogOpen} 
+                onClose={() => setDeleteDialogOpen(false)} 
+                sx={{
+                    '& .MuiDialog-paper': {
+                        bgcolor: '#0f172a',
+                        color: '#fff',
+                        borderRadius: 3,
+                        border: '1px solid rgba(255,255,255,0.1)'
+                    }
+                }}
+            >
                 <DialogTitle>Delete Category?</DialogTitle>
                 <DialogContent>
                     <DialogContentText sx={{ color: '#94a3b8' }}>Are you sure? This cannot be undone.</DialogContentText>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDeleteDialogOpen(false)} sx={{ color: '#94a3b8' }}>Cancel</Button>
-                    <Button onClick={confirmDelete} color="error" variant="contained">Delete</Button>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={() => setDeleteDialogOpen(false)} sx={{ color: '#94a3b8', textTransform: 'none' }}>Cancel</Button>
+                    <Button onClick={confirmDelete} color="error" variant="contained" sx={{ textTransform: 'none' }}>Delete</Button>
                 </DialogActions>
             </Dialog>
 
@@ -183,6 +209,18 @@ const CategoryList = () => {
             </Snackbar>
         </Box>
     );
+};
+
+const inputStyles = {
+    '& .MuiOutlinedInput-root': {
+        color: '#fff',
+        bgcolor: 'rgba(255, 255, 255, 0.03)',
+        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+        '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
+        '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
+    },
+    '& .MuiInputLabel-root': { color: '#94a3b8' },
+    '& .MuiInputLabel-root.Mui-focused': { color: '#3b82f6' },
 };
 
 export default CategoryList;

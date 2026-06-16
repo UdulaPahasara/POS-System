@@ -12,7 +12,7 @@ import {
     Add as AddIcon,
     Search as SearchIcon,
     Inventory2 as InventoryIcon,
-    QrCode as QrCodeIcon,
+    BarcodeReader as BarcodeIcon,
     Print as PrintIcon
 } from '@mui/icons-material';
 import ProductDialog from './ProductDialog';
@@ -192,8 +192,11 @@ const ProductList = () => {
         }, 250);
     };
 
-    const handleCloseSnackbar = () => {
-        setSnackbar({ ...snackbar, open: false });
+    const handleCloseSnackbar = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setSnackbar(prev => ({ ...prev, open: false }));
     };
 
     const filteredProducts = products.filter(p => 
@@ -278,7 +281,7 @@ const ProductList = () => {
                                 </TableCell>
                                 <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{product.sku}</TableCell>
                                 <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <Chip label={product.category?.name || product.category || 'Unknown'} size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }} />
+                                    <Chip label={product.category?.name || (typeof product.category === 'string' ? product.category : 'Unknown')} size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }} />
                                 </TableCell>
                                 <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>LKR {product.sellingPrice}</TableCell>
                                 <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -290,7 +293,7 @@ const ProductList = () => {
                                 </TableCell>
                                 <TableCell align="right" sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <IconButton onClick={() => handleOpenBarcode(product)} sx={{ color: '#a855f7' }} size="small" title="Print Barcode">
-                                        <QrCodeIcon fontSize="small" />
+                                        <BarcodeIcon fontSize="small" />
                                     </IconButton>
                                     <IconButton onClick={() => handleOpenEdit(product)} sx={{ color: '#60a5fa' }} size="small">
                                         <EditIcon fontSize="small" />
@@ -388,7 +391,7 @@ const ProductList = () => {
             {/* Snackbar Notification */}
             <Snackbar 
                 open={snackbar.open} 
-                autoHideDuration={4000} 
+                autoHideDuration={5000} 
                 onClose={handleCloseSnackbar}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >

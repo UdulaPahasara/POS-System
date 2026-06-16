@@ -16,6 +16,7 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import purchaseOrderRoutes from './routes/purchaseOrderRoutes.js';
 import purchaseReturnRoutes from './routes/purchaseReturnRoutes.js';
 import supplierRoutes from './routes/supplierRoutes.js';
+import settingRoutes from './routes/settingRoutes.js';
 import Role from './model/Role.js';
 import Permission from './model/Permission.js';
 import path from 'path';
@@ -46,6 +47,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/purchase-returns', purchaseReturnRoutes);
 app.use('/api/suppliers', supplierRoutes);
+app.use('/api/settings', settingRoutes);
 
 // Add a basic route to test server status
 app.get('/', (req, res) => {

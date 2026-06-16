@@ -79,14 +79,14 @@ const AdminHeader = ({ handleDrawerToggle }) => {
                     {/* User Profile */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1, cursor: 'pointer' }}>
                         <Avatar sx={{ bgcolor: '#3b82f6', width: 35, height: 35 }}>
-                            {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+                            {user?.username ? user.username.charAt(0).toUpperCase() : 'A'}
                         </Avatar>
                         <Box sx={{ display: { xs: 'none', md: 'block' } }}>
                             <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                                {user?.name || 'Admin User'}
+                                {user?.username || 'Admin User'}
                             </Typography>
                             <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                                {user?.role || 'Administrator'}
+                                {user?.role && typeof user.role === 'object' ? user.role.roleName : (user?.role || 'Administrator')}
                             </Typography>
                         </Box>
                     </Box>

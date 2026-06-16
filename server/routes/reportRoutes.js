@@ -5,12 +5,14 @@ import {
     getAdvancedSalesReport,
     getFinancialReport,
     getProductReport,
-    getCustomerReport
+    getCustomerReport,
+    getDashboardStats
 } from '../controllers/reportController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+router.get('/dashboard', protect, authorize('Admin', 'Manager'), getDashboardStats);
 router.get('/sales', protect, authorize('Admin', 'Manager'), getSalesReport);
 router.get('/sales/advanced', protect, authorize('Admin', 'Manager'), getAdvancedSalesReport);
 router.get('/inventory', protect, authorize('Admin', 'Manager'), getInventoryReport);

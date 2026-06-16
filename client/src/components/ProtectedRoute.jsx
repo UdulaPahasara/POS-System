@@ -20,10 +20,20 @@ const ProtectedRoute = ({ allowedRoles }) => {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // 2. If logged in but doesn't have the required role, kick to POS or Login
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
-        if (user.role === 'Cashier' || user.role === 'Manager' || user.role === 'Inventory Staff') {
+    // 2. If logged in but doesn't have the required role, kick to POS or Dashboard
+    const roleName = typeof user.role === 'object' ? user.role?.roleName : user.role;
+    if (allowedRoles && !allowedRoles.includes(roleName)) {
+        if (roleName === 'Inventory Staff') {
+            return <Navigate to="/inventory-staff/inventory-dashboard" replace />;
+        }
+        if (roleName === 'Manager') {
+            return <Navigate to="/manager/dashboard" replace />;
+        }
+        if (roleName === 'Cashier') {
             return <Navigate to="/pos" replace />;
+        }
+        if (roleName === 'Admin') {
+            return <Navigate to="/admin/dashboard" replace />;
         }
         return <Navigate to="/login" replace />;
     }

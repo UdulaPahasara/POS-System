@@ -3,6 +3,114 @@ import Product from '../model/Product.js';
 import Invoice from '../model/Invoice.js';
 import Customer from '../model/Customer.js';
 
+// @desc    Get Dashboard Overview Stats
+// @route   GET /api/reports/dashboard
+// @access  Private (Admin, Manager)
+export const getDashboardStats = async (req, res) => {
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        
+        // 1. Today's Sales
+        const todaySales = await Sale.aggregate([
+            { $match: { createdAt: { $gte: today } } },
+            { $group: { _id: null, total: { $sum: '$total' } } }
+        ]);
+        const todayRevenue = todaySales[0]?.total || 0;
+
+        // 2. Monthly Revenue
+        const monthSales = await Sale.aggregate([
+            { $match: { createdAt: { $gte: startOfMonth } } },
+            { $group: { _id: null, total: { $sum: '$total' } } }
+        ]);
+        const monthlyRevenue = monthSales[0]?.total || 0;
+
+        // 3. Monthly Profit (Revenue - COGS)
+        const monthSalesFull = await Sale.find({ createdAt: { $gte: startOfMonth } }).populate('items.product');
+        let monthlyCOGS = 0;
+        monthSalesFull.forEach(sale => {
+            if (sale.items) {
+                sale.items.forEach(item => {
+                    const costPrice = item.product?.costPrice || 0;
+                    monthlyCOGS += costPrice * item.quantity;
+                });
+            }
+        });
+        const totalProfit = monthlyRevenue - monthlyCOGS;
+
+        // 4. Items in Stock
+        const stockAgg = await Product.aggregate([
+            { $group: { _id: null, totalStock: { $sum: '$stock' } } }
+        ]);
+        const itemsInStock = stockAgg[0]?.totalStock || 0;
+
+        // 5. Revenue Trend (Last 7 Days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(today.getDate() - 6);
+        sevenDaysAgo.setHours(0,0,0,0);
+        
+        const trendSales = await Sale.aggregate([
+            { $match: { createdAt: { $gte: sevenDaysAgo } } },
+            { $group: {
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                total: { $sum: "$total" }
+            }},
+            { $sort: { _id: 1 } }
+        ]);
+
+        // Format for chart (fill missing days)
+        const chartLabels = [];
+        const chartData = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(sevenDaysAgo);
+            d.setDate(d.getDate() + i);
+            const dateStr = d.toISOString().split('T')[0];
+            const shortDay = d.toLocaleDateString('en-US', { weekday: 'short' });
+            
+            chartLabels.push(shortDay);
+            const found = trendSales.find(t => t._id === dateStr);
+            chartData.push(found ? found.total : 0);
+        }
+
+        // 6. Recent Transactions
+        const recentTransactionsRaw = await Sale.find().sort({ createdAt: -1 }).limit(5).populate('invoice');
+        const recentTransactions = recentTransactionsRaw.map(sale => ({
+            id: sale.invoice?.invoiceNumber || sale._id.toString().slice(-6).toUpperCase(),
+            customer: sale.customer?.name || 'Walk-in Customer',
+            amount: `Rs. ${sale.total.toFixed(2)}`,
+            status: 'Completed' 
+        }));
+
+        // 7. Low Stock Alerts
+        const lowStockRaw = await Product.find({ $expr: { $lte: ['$stock', '$reorderLevel'] } }).limit(5);
+        const lowStockItems = lowStockRaw.map(p => ({
+            name: p.name,
+            sku: p.sku || 'N/A',
+            stock: p.stock,
+            reorder: p.reorderLevel
+        }));
+
+        res.json({
+            todayRevenue,
+            monthlyRevenue,
+            totalProfit,
+            itemsInStock,
+            chartData: {
+                labels: chartLabels,
+                data: chartData
+            },
+            recentTransactions,
+            lowStockItems
+        });
+        
+    } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        res.status(500).json({ message: 'Server error fetching dashboard stats' });
+    }
+};
+
 // @desc    Get Sales Report Data
 // @route   GET /api/reports/sales
 // @access  Private (Admin/Manager)

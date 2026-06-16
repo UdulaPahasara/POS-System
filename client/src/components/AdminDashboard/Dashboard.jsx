@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Grid, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Chip } from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import {
@@ -60,19 +60,52 @@ const SummaryCard = ({ title, value, subtitle, icon, color }) => (
 );
 
 const Dashboard = () => {
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
     // Get user role
     const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
-    const userRole = user?.role || 'Admin';
+    const userRoleObj = user?.role;
+    const userRole = typeof userRoleObj === 'object' ? userRoleObj?.roleName : (userRoleObj || 'Admin');
+
+    useEffect(() => {
+        const fetchDashboardStats = async () => {
+            try {
+                const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+                const response = await fetch('http://localhost:5000/api/reports/dashboard', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                setStats(data);
+                setLoading(false);
+            } catch (err) {
+                console.error("Failed to fetch dashboard stats", err);
+                setError("Failed to load dashboard data.");
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardStats();
+    }, []);
+
+    if (loading) return <Box sx={{ p: 4 }}><Typography sx={{ color: '#fff' }}>Loading Dashboard...</Typography></Box>;
+    if (error) return <Box sx={{ p: 4 }}><Typography sx={{ color: '#ef4444' }}>{error}</Typography></Box>;
 
     // Chart Data
     const chartData = {
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        labels: stats?.chartData?.labels || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
         datasets: [
             {
                 fill: true,
                 label: 'Revenue (Rs.)',
-                data: [1200, 1900, 1500, 2200, 1800, 2800, 2400],
+                data: stats?.chartData?.data || [0, 0, 0, 0, 0, 0, 0],
                 borderColor: '#3b82f6',
                 backgroundColor: 'rgba(59, 130, 246, 0.2)',
                 tension: 0.4
@@ -90,19 +123,8 @@ const Dashboard = () => {
         }
     };
 
-    // Mock Data Tables
-    const recentTransactions = [
-        { id: 'INV-1001', customer: 'John Doe', amount: 'Rs. 120.00', status: 'Completed' },
-        { id: 'INV-1002', customer: 'Walk-in Customer', amount: 'Rs. 45.50', status: 'Completed' },
-        { id: 'INV-1003', customer: 'Jane Smith', amount: 'Rs. 310.00', status: 'Pending' },
-        { id: 'INV-1004', customer: 'Michael Brown', amount: 'Rs. 85.00', status: 'Completed' },
-    ];
-
-    const lowStockItems = [
-        { name: 'DJI Mini 3 Pro Battery', sku: 'DJI-B-001', stock: 2, reorder: 10 },
-        { name: 'Sony A7IV Body', sku: 'SNY-C-042', stock: 1, reorder: 5 },
-        { name: 'SanDisk 128GB SD Card', sku: 'SD-128-PRO', stock: 4, reorder: 20 },
-    ];
+    const recentTransactions = stats?.recentTransactions || [];
+    const lowStockItems = stats?.lowStockItems || [];
 
     return (
         <Box sx={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -114,20 +136,20 @@ const Dashboard = () => {
             {/* Summary Cards */}
             <Grid container spacing={3} sx={{ mb: 4, justifyContent: 'center' }}>
                 <Grid item xs={11} sm={5} md={3}>
-                    <SummaryCard title="Today's Sales" value="Rs.2,450" subtitle="+12% from yesterday" icon={<SalesIcon fontSize="large" />} color="#3b82f6" />
+                    <SummaryCard title="Today's Sales" value={`Rs.${stats?.todayRevenue?.toLocaleString() || 0}`} subtitle="Calculated from today's orders" icon={<SalesIcon fontSize="large" />} color="#3b82f6" />
                 </Grid>
                 {userRole === 'Admin' && (
                     <Grid item xs={11} sm={5} md={3}>
-                        <SummaryCard title="Monthly Revenue" value="Rs.45,230" subtitle="+5% from last month" icon={<RevenueIcon fontSize="large" />} color="#10b981" />
+                        <SummaryCard title="Monthly Revenue" value={`Rs.${stats?.monthlyRevenue?.toLocaleString() || 0}`} subtitle="Total revenue for this month" icon={<RevenueIcon fontSize="large" />} color="#10b981" />
                     </Grid>
                 )}
                 {userRole === 'Admin' && (
                     <Grid item xs={11} sm={5} md={3}>
-                        <SummaryCard title="Total Profit" value="Rs.18,400" subtitle="+8% from last month" icon={<ProfitIcon fontSize="large" />} color="#f59e0b" />
+                        <SummaryCard title="Total Profit" value={`Rs.${stats?.totalProfit?.toLocaleString() || 0}`} subtitle="Gross profit this month" icon={<ProfitIcon fontSize="large" />} color="#f59e0b" />
                     </Grid>
                 )}
                 <Grid item xs={11} sm={5} md={3}>
-                    <SummaryCard title="Items in Stock" value="1,245" subtitle="12 items running low" icon={<StockIcon fontSize="large" />} color="#8b5cf6" />
+                    <SummaryCard title="Items in Stock" value={(stats?.itemsInStock || 0).toLocaleString()} subtitle={`${stats?.lowStockItems?.length || 0} items running low`} icon={<StockIcon fontSize="large" />} color="#8b5cf6" />
                 </Grid>
             </Grid>
 
@@ -200,7 +222,7 @@ const Dashboard = () => {
                                                 <Typography variant="caption" sx={{ color: '#94a3b8' }}>{row.sku}</Typography>
                                             </TableCell>
                                             <TableCell align="center" sx={{ color: '#ef4444', borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700 }}>
-                                                {row.stock}
+                                                {row.stock} / {row.reorder}
                                             </TableCell>
                                             <TableCell align="right" sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                                 <Button size="small" variant="outlined" sx={{ borderColor: '#3b82f6', color: '#3b82f6', textTransform: 'none' }}>

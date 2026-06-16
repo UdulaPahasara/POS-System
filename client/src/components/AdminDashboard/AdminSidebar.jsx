@@ -10,19 +10,25 @@ import {
     Settings as SettingsIcon,
     Logout as LogoutIcon,
     LocalOffer as CategoryIcon,
-    Assessment as AssessmentIcon
+    Assessment as AssessmentIcon,
+    Business as SupplierIcon,
+    AssignmentReturn as ReturnIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-const navItems = [
-    { title: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
-    { title: 'Categories', icon: <CategoryIcon />, path: '/admin/categories' },
-    { title: 'Products', icon: <ProductIcon/>, path: '/admin/products', adminOnly: true },
-    { title: 'Inventory', icon: <InventoryIcon />, path: '/admin/inventory' },
-    { title: 'Reports', icon: <AssessmentIcon />, path: '/admin/reports' },
-    { title: 'Customers', icon: <CustomerIcon />, path: '/admin/customers' },
-    { title: 'Employees', icon: <EmployeeIcon />, path: '/admin/employees', adminOnly: true },
-    { title: 'Settings', icon: <SettingsIcon />, path: '/admin/settings', adminOnly: true },
+const rawNavItems = [
+    { title: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', roles: ['Admin', 'Manager'] },
+    { title: 'Inventory Dashboard', icon: <DashboardIcon />, path: '/inventory-dashboard', roles: ['Inventory Staff'] },
+    { title: 'Categories', icon: <CategoryIcon />, path: '/categories', roles: ['Admin'] },
+    { title: 'Products', icon: <ProductIcon/>, path: '/products', roles: ['Admin'] },
+    { title: 'Purchase Orders', icon: <AssessmentIcon />, path: '/purchase-orders', roles: ['Manager', 'Inventory Staff'] },
+    { title: 'Purchase Returns', icon: <ReturnIcon />, path: '/purchase-returns', roles: ['Manager', 'Inventory Staff'] },
+    { title: 'Suppliers', icon: <SupplierIcon />, path: '/suppliers', roles: ['Manager'] },
+    { title: 'Inventory', icon: <InventoryIcon />, path: '/inventory', roles: ['Admin', 'Manager', 'Inventory Staff'] },
+    { title: 'Reports', icon: <AssessmentIcon />, path: '/reports', roles: ['Admin', 'Manager'] },
+    { title: 'Customers', icon: <CustomerIcon />, path: '/customers', roles: ['Manager', 'Cashier'] },
+    { title: 'Employees', icon: <EmployeeIcon />, path: '/employees', roles: ['Admin'] },
+    { title: 'Settings', icon: <SettingsIcon />, path: '/settings', roles: ['Admin'] },
 ];
 
 const AdminSidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
@@ -31,7 +37,18 @@ const AdminSidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
 
     const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
-    const userRole = user?.role || 'Admin';
+    const userRoleObj = user?.role;
+    const roleName = typeof userRoleObj === 'object' ? userRoleObj?.roleName : (userRoleObj || 'Cashier');
+    
+    const getRoleBasePath = (roleName) => {
+        if (roleName === 'Admin') return '/admin';
+        if (roleName === 'Manager') return '/manager';
+        if (roleName === 'Inventory Staff') return '/inventory-staff';
+        return '/admin'; // fallback
+    };
+    
+    const roleBasePath = getRoleBasePath(roleName);
+    const navItems = rawNavItems.filter(item => item.roles.includes(roleName)).map(item => ({...item, path: roleBasePath + item.path}));
 
     const handleNavigation = (path) => {
         navigate(path);
@@ -80,7 +97,7 @@ const AdminSidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
             <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
 
             <List sx={{ px: 2, flexGrow: 1, mt: 2 }}>
-                {navItems.filter(item => !(item.adminOnly && userRole !== 'Admin')).map((item) => {
+                {navItems.map((item) => {
                     const isActive = location.pathname.includes(item.path);
                     return (
                         <ListItemButton 
@@ -103,7 +120,7 @@ const AdminSidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
                             </ListItemIcon>
                             <ListItemText 
                                 primary={item.title} 
-                                primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: isActive ? 600 : 500 }} 
+                                sx={{ '& .MuiListItemText-primary': { fontSize: '0.9rem', fontWeight: isActive ? 600 : 500 } }} 
                             />
                         </ListItemButton>
                     );
@@ -124,7 +141,7 @@ const AdminSidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
                     <ListItemIcon sx={{ color: '#ef4444', minWidth: 40 }}>
                         <LogoutIcon />
                     </ListItemIcon>
-                    <ListItemText primary="Logout" primaryTypographyProps={{ fontWeight: 600 }} />
+                    <ListItemText primary="Logout" sx={{ '& .MuiListItemText-primary': { fontWeight: 600 } }} />
                 </ListItemButton>
             </Box>
         </Box>
