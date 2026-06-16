@@ -3,7 +3,7 @@ import PurchaseOrder from '../model/PurchaseOrder.js';
 
 export const getSuppliers = async (req, res) => {
     try {
-        const suppliers = await Supplier.find();
+        const suppliers = await Supplier.find().populate('category', 'name');
         res.json(suppliers);
     } catch (error) {
         res.status(500).json({ message: 'Server error' });

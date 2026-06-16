@@ -3,7 +3,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, IconButton, Button,
     TextField, Dialog, DialogTitle, DialogContent, DialogActions,
-    Snackbar, Alert, DialogContentText
+    Snackbar, Alert, DialogContentText, Select, MenuItem, FormControl, InputLabel
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, History as HistoryIcon } from '@mui/icons-material';
 
@@ -13,10 +13,11 @@ const SupplierList = () => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
     const [supplierHistory, setSupplierHistory] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
     const [currentId, setCurrentId] = useState(null);
     
-    const defaultForm = { supplierName: '', contactPerson: '', phone: '', email: '', address: '' };
+    const defaultForm = { supplierName: '', category: '', contactPerson: '', phone: '', email: '', address: '' };
     const [formData, setFormData] = useState(defaultForm);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -35,8 +36,24 @@ const SupplierList = () => {
         }
     };
 
+    const fetchCategories = async () => {
+        try {
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const res = await fetch('http://localhost:5000/api/categories', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setCategories(data);
+            }
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        }
+    };
+
     useEffect(() => {
         fetchSuppliers();
+        fetchCategories();
     }, []);
 
     const handleOpen = (supplier = null) => {
@@ -45,6 +62,7 @@ const SupplierList = () => {
             setCurrentId(supplier._id);
             setFormData({ 
                 supplierName: supplier.supplierName || '', 
+                category: supplier.category?._id || supplier.category || '',
                 contactPerson: supplier.contactPerson || '', 
                 phone: supplier.phone || '', 
                 email: supplier.email || '', 
@@ -148,6 +166,7 @@ const SupplierList = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Supplier Name</TableCell>
+                            <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Category</TableCell>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Contact Person</TableCell>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Phone</TableCell>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Email</TableCell>
@@ -157,7 +176,7 @@ const SupplierList = () => {
                     <TableBody>
                         {suppliers.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} align="center" sx={{ color: '#94a3b8', borderBottom: 'none', py: 4 }}>
+                                <TableCell colSpan={6} align="center" sx={{ color: '#94a3b8', borderBottom: 'none', py: 4 }}>
                                     No suppliers found. Click "Add Supplier" to create one.
                                 </TableCell>
                             </TableRow>
@@ -165,6 +184,7 @@ const SupplierList = () => {
                             suppliers.map((sup) => (
                                 <TableRow key={sup._id} sx={{ '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' } }}>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{sup.supplierName}</TableCell>
+                                    <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{sup.category?.name || 'N/A'}</TableCell>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{sup.contactPerson || 'N/A'}</TableCell>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{sup.phone || 'N/A'}</TableCell>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{sup.email || 'N/A'}</TableCell>
@@ -205,23 +225,40 @@ const SupplierList = () => {
                             value={formData.supplierName} onChange={(e) => setFormData({...formData, supplierName: e.target.value})}
                             sx={inputStyles}
                         />
+                        <FormControl fullWidth sx={inputStyles}>
+                            <InputLabel id="category-select-label">Category</InputLabel>
+                            <Select
+                                labelId="category-select-label"
+                                value={formData.category}
+                                label="Category"
+                                onChange={(e) => setFormData({...formData, category: e.target.value})}
+                            >
+                                <MenuItem value=""><em>None</em></MenuItem>
+                                {categories.map(cat => (
+                                    <MenuItem key={cat._id} value={cat._id}>{cat.name}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                         <TextField 
                             fullWidth label="Contact Person" 
                             value={formData.contactPerson} onChange={(e) => setFormData({...formData, contactPerson: e.target.value})}
                             sx={inputStyles}
                         />
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                         <TextField 
                             fullWidth label="Phone" 
                             value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})}
                             sx={inputStyles}
                         />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                         <TextField 
                             fullWidth label="Email" type="email"
                             value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})}
                             sx={inputStyles}
                         />
+                        <Box sx={{ flex: 1 }} />
                     </Box>
                     <TextField 
                         fullWidth label="Address" multiline rows={3}
@@ -321,6 +358,7 @@ const inputStyles = {
         '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
         '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
         '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
+        '& .MuiSvgIcon-root': { color: '#94a3b8' },
     },
     '& .MuiInputLabel-root': { color: '#94a3b8' },
     '& .MuiInputLabel-root.Mui-focused': { color: '#3b82f6' },
