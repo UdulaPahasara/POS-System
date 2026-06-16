@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 // @access  Private (Admin)
 export const getUsers = async (req, res) => {
     try {
-        const users = await User.find({}).select('-password'); // Exclude password from results
+        const users = await User.find({}).select('-password').populate('role', 'roleName'); // Exclude password, populate role
         res.json(users);
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -20,6 +20,15 @@ export const getUsers = async (req, res) => {
 export const createUser = async (req, res) => {
     try {
         const { username, email, password, phone, role, status } = req.body;
+
+        // Ensure role is an ObjectId
+        let roleId = role;
+        if (!roleId) {
+            const mongoose = await import('mongoose');
+            const Role = mongoose.model('Role');
+            const defaultRole = await Role.findOne({ roleName: 'Cashier' });
+            roleId = defaultRole ? defaultRole._id : null;
+        }
 
         // Check if user exists
         const userExists = await User.findOne({ email });
@@ -42,7 +51,7 @@ export const createUser = async (req, res) => {
             email,
             password: hashedPassword,
             phone,
-            role: role || 'Cashier',
+            role: roleId,
             status: status || 'Active'
         });
 

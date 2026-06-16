@@ -57,6 +57,14 @@ const productSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    reservedStock: {
+        type: Number,
+        default: 0
+    },
+    damagedStock: {
+        type: Number,
+        default: 0
+    },
     imageUrl: {
         type: String
     }
