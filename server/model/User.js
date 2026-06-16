@@ -11,9 +11,9 @@ const userSchema = new mongoose.Schema({
     default: 'Active'
   },
   role: { 
-    type: String, 
-    enum: ['Admin', 'Manager', 'Cashier', 'Inventory Staff'],
-    default: 'Cashier'
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Role',
+    required: true
   }
 }, { timestamps: true });
 
