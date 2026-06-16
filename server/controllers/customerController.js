@@ -5,7 +5,20 @@ import Customer from '../model/Customer.js';
 // @access  Private (Admin/Manager)
 export const getCustomers = async (req, res) => {
     try {
-        const customers = await Customer.find({}).sort({ createdAt: -1 });
+        const { search } = req.query;
+        let query = {};
+        
+        if (search) {
+            query = {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } },
+                    { phone: { $regex: search, $options: 'i' } }
+                ]
+            };
+        }
+
+        const customers = await Customer.find(query).sort({ createdAt: -1 });
         res.json(customers);
     } catch (error) {
         console.error('Error fetching customers:', error);
