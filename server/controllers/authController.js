@@ -7,8 +7,11 @@ export const loginUser = async (req, res) => {
     try {
         const { email, password, rememberMe } = req.body;
 
-        // 1. Check if user exists
-        const user = await User.findOne({ email });
+        // 1. Check if user exists and populate role
+        const user = await User.findOne({ email }).populate({
+            path: 'role',
+            populate: { path: 'permissions' }
+        });
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
