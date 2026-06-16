@@ -100,7 +100,7 @@ const Cart = ({ cartItems, updateQuantity, removeItem, clearCart, handleCheckout
                     <Typography sx={{ color: '#fff', fontWeight: 600 }}>LKR {subtotal.toFixed(2)}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                    <Typography sx={{ color: '#94a3b8' }}>Tax (10%)</Typography>
+                    <Typography sx={{ color: '#94a3b8' }}>Tax</Typography>
                     <Typography sx={{ color: '#fff', fontWeight: 600 }}>LKR {tax.toFixed(2)}</Typography>
                 </Box>
                 

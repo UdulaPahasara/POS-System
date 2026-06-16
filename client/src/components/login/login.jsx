@@ -35,8 +35,23 @@ const Login = () => {
         if (existingToken && userString) {
             try {
                 const user = JSON.parse(userString);
-                if (user.role === 'Admin' || user.role === 'Manager') {
+                const roleObj = user.role;
+                const roleName = roleObj && typeof roleObj === 'object' ? roleObj.roleName : roleObj;
+                
+                if (!roleName) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    sessionStorage.removeItem('token');
+                    sessionStorage.removeItem('user');
+                    return;
+                }
+
+                if (roleName === 'Admin') {
                     navigate('/admin/dashboard');
+                } else if (roleName === 'Manager') {
+                    navigate('/manager/dashboard');
+                } else if (roleName === 'Inventory Staff') {
+                    navigate('/inventory-staff/inventory-dashboard');
                 } else {
                     navigate('/pos');
                 }
@@ -129,8 +144,21 @@ const Login = () => {
             console.log("Logged in successfully!", data.user);
             
             // Route based on role
-            if (data.user.role === 'Admin' || data.user.role === 'Manager') {
+            const roleObj = data.user.role;
+            const roleName = roleObj && typeof roleObj === 'object' ? roleObj.roleName : roleObj;
+            
+            if (!roleName) {
+                setError('Invalid user role assigned. Please contact administrator.');
+                setIsLoading(false);
+                return;
+            }
+
+            if (roleName === 'Admin') {
                 navigate('/admin/dashboard'); 
+            } else if (roleName === 'Manager') {
+                navigate('/manager/dashboard');
+            } else if (roleName === 'Inventory Staff') {
+                navigate('/inventory-staff/inventory-dashboard');
             } else {
                 navigate('/pos');
             }

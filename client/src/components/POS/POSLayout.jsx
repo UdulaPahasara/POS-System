@@ -14,13 +14,9 @@ import emailjs from '@emailjs/browser';
 const POSLayout = () => {
     const navigate = useNavigate();
     // Get current user
-    let user = { role: 'Cashier', username: 'Unknown' };
     const userString = localStorage.getItem('user') || sessionStorage.getItem('user');
-    if (userString) {
-        try {
-            user = JSON.parse(userString);
-        } catch(e) {}
-    }
+    const user = userString ? JSON.parse(userString) : { role: 'Cashier', username: 'Unknown' };
+    const userRoleName = user?.role && typeof user.role === 'object' ? user.role.roleName : (user?.role || 'Cashier');
 
     // UI state for customer handling & receipt
     const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
@@ -159,8 +155,11 @@ const POSLayout = () => {
             <Box sx={{ flex: '0 0 65%', display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
                 {/* Header Navbar */}
                 <Box sx={{ height: '70px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', px: 3, bgcolor: '#1e293b' }}>
-                    {user.role === 'Admin' && (
-                        <IconButton onClick={() => navigate('/admin/dashboard')} sx={{ color: '#94a3b8', mr: 2 }}>
+                    {['Admin', 'Manager', 'Inventory Staff'].includes(userRoleName) && (
+                        <IconButton onClick={() => {
+                            const basePath = userRoleName === 'Admin' ? '/admin' : userRoleName === 'Manager' ? '/manager' : '/inventory-staff';
+                            navigate(`${basePath}/${userRoleName === 'Inventory Staff' ? 'inventory-dashboard' : 'dashboard'}`);
+                        }} sx={{ color: '#94a3b8', mr: 2 }}>
                             <ArrowBackIcon />
                         </IconButton>
                     )}
@@ -168,7 +167,7 @@ const POSLayout = () => {
                         POS System
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#94a3b8', mr: 3 }}>
-                        User: {user.username} ({user.role})
+                        User: {user.username} ({userRoleName})
                     </Typography>
                     
                     {/* Barcode Scanner Actions */}

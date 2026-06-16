@@ -73,7 +73,7 @@ const ReceiptDialog = ({ open, onClose, sale }) => {
                         <Typography>LKR {subtotal.toFixed(2)}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography>Tax (10%)</Typography>
+                        <Typography>Tax</Typography>
                         <Typography>LKR {tax.toFixed(2)}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', mt: 1 }}>

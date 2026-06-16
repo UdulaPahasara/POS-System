@@ -6,14 +6,17 @@ const ProductGrid = ({ products, onAddToCart }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
 
+    const getCategoryName = (c) => typeof c === 'object' ? c?.name : c;
+    
     // Extract unique categories
-    const categories = ['All', ...new Set(products.map(p => p.category))];
+    const categories = ['All', ...new Set(products.map(p => getCategoryName(p.category) || 'Unknown'))];
 
     // Filter products
     const filteredProducts = products.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                               p.sku.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
+        const catName = getCategoryName(p.category) || 'Unknown';
+        const matchesCategory = activeCategory === 'All' || catName === activeCategory;
         return matchesSearch && matchesCategory;
     });
 

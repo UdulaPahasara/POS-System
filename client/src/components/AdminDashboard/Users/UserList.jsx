@@ -100,7 +100,8 @@ const UserList = () => {
     };
 
     const getRoleColor = (role) => {
-        switch(role) {
+        const roleName = typeof role === 'object' ? role?.roleName : role;
+        switch(roleName) {
             case 'Admin': return 'error';
             case 'Manager': return 'secondary';
             case 'Inventory Staff': return 'info';
@@ -157,7 +158,7 @@ const UserList = () => {
                                     <Typography variant="caption" sx={{ color: '#94a3b8' }}>{user.phone || 'No phone'}</Typography>
                                 </TableCell>
                                 <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <Chip label={user.role} size="small" color={getRoleColor(user.role)} variant="outlined" />
+                                    <Chip label={typeof user.role === 'object' ? user.role?.roleName : user.role} size="small" color={getRoleColor(user.role)} variant="outlined" />
                                 </TableCell>
                                 <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <Chip label={user.status} size="small" color={getStatusColor(user.status)} />
