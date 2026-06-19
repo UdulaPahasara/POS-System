@@ -2,6 +2,7 @@ import express from 'express';
 import { 
     getPurchaseOrders,
     createPurchaseOrder,
+    updatePurchaseOrder,
     approvePurchaseOrder,
     receiveGoods
 } from '../controllers/purchaseOrderController.js';
@@ -12,6 +13,9 @@ const router = express.Router();
 router.route('/')
     .get(protect, getPurchaseOrders)
     .post(protect, requirePermission('CREATE_PO'), createPurchaseOrder);
+
+router.route('/:id')
+    .put(protect, requirePermission('CREATE_PO'), updatePurchaseOrder);
 
 router.route('/:id/approve')
     .put(protect, requirePermission('APPROVE_PO'), approvePurchaseOrder);

@@ -26,6 +26,7 @@ export const createCategory = async (req, res) => {
         }
 
         const category = await Category.create({ name, description, taxRate: taxRate || 0 });
+        if (req.io) req.io.emit('data_updated', { type: 'CATEGORY' });
         res.status(201).json(category);
     } catch (error) {
         console.error('Error creating category:', error);
@@ -56,6 +57,7 @@ export const updateCategory = async (req, res) => {
         category.taxRate = req.body.taxRate !== undefined ? req.body.taxRate : category.taxRate;
 
         const updatedCategory = await category.save();
+        if (req.io) req.io.emit('data_updated', { type: 'CATEGORY' });
         res.json(updatedCategory);
     } catch (error) {
         console.error('Error updating category:', error);
@@ -74,6 +76,7 @@ export const deleteCategory = async (req, res) => {
         }
 
         await category.deleteOne();
+        if (req.io) req.io.emit('data_updated', { type: 'CATEGORY' });
         res.json({ message: 'Category removed' });
     } catch (error) {
         console.error('Error deleting category:', error);

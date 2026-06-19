@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import http from 'http';
+import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import connectDB from './config/db.js';
@@ -17,6 +19,7 @@ import purchaseOrderRoutes from './routes/purchaseOrderRoutes.js';
 import purchaseReturnRoutes from './routes/purchaseReturnRoutes.js';
 import supplierRoutes from './routes/supplierRoutes.js';
 import settingRoutes from './routes/settingRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 import Role from './model/Role.js';
 import Permission from './model/Permission.js';
 import path from 'path';
@@ -26,10 +29,23 @@ dotenv.config();
 
 // Initialize Express App
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: '*', // Adjust this for production
+        methods: ['GET', 'POST', 'PUT', 'DELETE']
+    }
+});
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Attach socket.io to req object so controllers can use it
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
 
 // Expose the 'uploads' folder so the frontend can access uploaded images
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
@@ -48,6 +64,7 @@ app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/purchase-returns', purchaseReturnRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/settings', settingRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Add a basic route to test server status
 app.get('/', (req, res) => {
@@ -140,7 +157,20 @@ connectDB().then(async () => {
     await runSeeder();
     await seedAdmin(); 
     
-    app.listen(PORT, () => {
+    io.on('connection', (socket) => {
+        console.log('A user connected via socket.io:', socket.id);
+        
+        socket.on('join_room', (userId) => {
+            socket.join(userId);
+            console.log(`User ${userId} joined their notification room.`);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('User disconnected:', socket.id);
+        });
+    });
+
+    server.listen(PORT, () => {
         console.log(`✅ Server running on port ${PORT}`);
     });
 });

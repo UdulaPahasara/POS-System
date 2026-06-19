@@ -21,11 +21,17 @@ export const createUser = async (req, res) => {
     try {
         const { username, email, password, phone, role, status } = req.body;
 
-        // Ensure role is an ObjectId
-        let roleId = role;
+        // Ensure role is an ObjectId by looking up the roleName
+        let roleId = null;
+        const mongoose = await import('mongoose');
+        const Role = mongoose.model('Role');
+
+        if (role) {
+            const foundRole = await Role.findOne({ roleName: role });
+            if (foundRole) roleId = foundRole._id;
+        }
+
         if (!roleId) {
-            const mongoose = await import('mongoose');
-            const Role = mongoose.model('Role');
             const defaultRole = await Role.findOne({ roleName: 'Cashier' });
             roleId = defaultRole ? defaultRole._id : null;
         }
@@ -56,6 +62,7 @@ export const createUser = async (req, res) => {
         });
 
         if (user) {
+            if (req.io) req.io.emit('data_updated', { type: 'USER' });
             res.status(201).json({
                 _id: user._id,
                 username: user.username,
@@ -86,7 +93,16 @@ export const updateUser = async (req, res) => {
         user.username = req.body.username || user.username;
         user.email = req.body.email || user.email;
         user.phone = req.body.phone !== undefined ? req.body.phone : user.phone;
-        user.role = req.body.role || user.role;
+        
+        if (req.body.role) {
+            const mongoose = await import('mongoose');
+            const Role = mongoose.model('Role');
+            const foundRole = await Role.findOne({ roleName: req.body.role });
+            if (foundRole) {
+                user.role = foundRole._id;
+            }
+        }
+        
         user.status = req.body.status || user.status;
 
         // Only update password if a new one was provided
@@ -96,6 +112,7 @@ export const updateUser = async (req, res) => {
         }
 
         const updatedUser = await user.save();
+        if (req.io) req.io.emit('data_updated', { type: 'USER' });
 
         res.json({
             _id: updatedUser._id,
@@ -127,6 +144,7 @@ export const deleteUser = async (req, res) => {
         }
 
         await User.deleteOne({ _id: user._id });
+        if (req.io) req.io.emit('data_updated', { type: 'USER' });
         res.json({ message: 'User removed completely' });
     } catch (error) {
         console.error('Error deleting user:', error);

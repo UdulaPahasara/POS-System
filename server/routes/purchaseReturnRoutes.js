@@ -2,6 +2,7 @@ import express from 'express';
 import { 
     getPurchaseReturns, 
     createPurchaseReturn, 
+    updatePurchaseReturn,
     approvePurchaseReturn, 
     shipPurchaseReturn 
 } from '../controllers/purchaseReturnController.js';
@@ -12,6 +13,9 @@ const router = express.Router();
 router.route('/')
     .get(protect, getPurchaseReturns)
     .post(protect, createPurchaseReturn);
+
+router.route('/:id')
+    .put(protect, updatePurchaseReturn);
 
 router.route('/:id/approve')
     .put(protect, approvePurchaseReturn);

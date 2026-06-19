@@ -1,5 +1,8 @@
 import Product from '../model/Product.js';
 import InventoryLog from '../model/InventoryLog.js';
+import Notification from '../model/Notification.js';
+import User from '../model/User.js';
+import Role from '../model/Role.js';
 
 // @desc    Create a new product
 // @route   POST /api/products
@@ -34,6 +37,28 @@ export const createProduct = async (req, res) => {
             }
         });
 
+        // Notify Managers
+        const roles = await Role.find({ roleName: 'Manager' });
+        const roleIds = roles.map(r => r._id);
+        const usersToNotify = await User.find({ role: { $in: roleIds } });
+
+        for (const user of usersToNotify) {
+            const notif = await Notification.create({
+                recipient: user._id,
+                title: 'New Product Added',
+                message: `Product ${name} (${sku}) has been added to inventory.`,
+                type: 'info',
+                relatedId: product._id,
+                relatedModel: 'Product',
+                link: '/admin/inventory',
+                actorRole: req.user && req.user.role ? req.user.role.roleName : 'Admin'
+            });
+            if (req.io) {
+                req.io.to(user._id.toString()).emit('new_notification', notif);
+            }
+        }
+
+        if (req.io) req.io.emit('data_updated', { type: 'PRODUCT' });
         res.status(201).json(product);
     } catch (error) {
         console.error('Error creating product:', error);
@@ -104,6 +129,7 @@ export const updateProduct = async (req, res) => {
         }
 
         const updatedProduct = await product.save();
+        if (req.io) req.io.emit('data_updated', { type: 'PRODUCT' });
         res.json(updatedProduct);
 
     } catch (error) {
@@ -124,6 +150,7 @@ export const deleteProduct = async (req, res) => {
         }
 
         await product.deleteOne();
+        if (req.io) req.io.emit('data_updated', { type: 'PRODUCT' });
         res.json({ message: 'Product removed' });
     } catch (error) {
         console.error('Error deleting product:', error);
@@ -178,6 +205,41 @@ export const adjustStock = async (req, res) => {
         product.stock = newStockLevel;
         await product.save();
 
+        let currentActorRole = 'Inventory Staff';
+        if (req.user && req.user.role) {
+            currentActorRole = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+        }
+
+        let rolesToFind = [];
+        if (currentActorRole === 'Admin') {
+            rolesToFind = ['Manager'];
+        } else if (currentActorRole === 'Manager') {
+            rolesToFind = ['Admin'];
+        } else {
+            rolesToFind = ['Admin', 'Manager'];
+        }
+
+        const rolesToNotify = await Role.find({ roleName: { $in: rolesToFind } });
+        const roleIdsToNotify = rolesToNotify.map(r => r._id);
+        const usersToNotify = await User.find({ role: { $in: roleIdsToNotify } });
+
+        for (const user of usersToNotify) {
+            const notif = await Notification.create({
+                recipient: user._id,
+                title: 'Inventory Adjusted',
+                message: `Stock for ${product.name} was adjusted by ${quantityChanged} units (${action}). Reason: ${reason || 'Manual Adjustment'}`,
+                type: 'warning',
+                relatedId: product._id,
+                relatedModel: 'Product',
+                link: '/admin/inventory',
+                actorRole: currentActorRole
+            });
+            if (req.io) {
+                req.io.to(user._id.toString()).emit('new_notification', notif);
+            }
+        }
+
+        if (req.io) req.io.emit('data_updated', { type: 'PRODUCT' });
         res.json({ message: 'Stock adjusted successfully', stock: product.stock });
     } catch (error) {
         console.error('Error adjusting stock:', error);

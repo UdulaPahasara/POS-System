@@ -48,6 +48,7 @@ export const createCustomer = async (req, res) => {
         });
 
         const createdCustomer = await customer.save();
+        if (req.io) req.io.emit('data_updated', { type: 'CUSTOMER' });
         res.status(201).json(createdCustomer);
     } catch (error) {
         console.error('Error creating customer:', error);
@@ -74,6 +75,7 @@ export const updateCustomer = async (req, res) => {
             }
 
             const updatedCustomer = await customer.save();
+            if (req.io) req.io.emit('data_updated', { type: 'CUSTOMER' });
             res.json(updatedCustomer);
         } else {
             res.status(404).json({ message: 'Customer not found' });
@@ -93,6 +95,7 @@ export const deleteCustomer = async (req, res) => {
 
         if (customer) {
             await customer.deleteOne();
+            if (req.io) req.io.emit('data_updated', { type: 'CUSTOMER' });
             res.json({ message: 'Customer removed' });
         } else {
             res.status(404).json({ message: 'Customer not found' });

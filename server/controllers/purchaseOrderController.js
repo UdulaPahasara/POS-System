@@ -1,5 +1,34 @@
 import PurchaseOrder from '../model/PurchaseOrder.js';
 import Product from '../model/Product.js';
+import User from '../model/User.js';
+import Role from '../model/Role.js';
+import Notification from '../model/Notification.js';
+
+// @desc    Update a purchase order
+// @route   PUT /api/purchase-orders/:id
+// @access  Private
+export const updatePurchaseOrder = async (req, res) => {
+    try {
+        const { supplier, items, totalCost } = req.body;
+        const po = await PurchaseOrder.findById(req.params.id);
+        if (!po) return res.status(404).json({ message: 'PO not found' });
+
+        if (po.status !== 'Pending') {
+            return res.status(400).json({ message: `Cannot update PO in ${po.status} status` });
+        }
+
+        po.supplier = supplier;
+        po.items = items;
+        po.totalCost = totalCost;
+        await po.save();
+
+        if (req.io) req.io.emit('data_updated', { type: 'PURCHASE_ORDER' });
+        res.json(po);
+    } catch (error) {
+        console.error('Error updating PO:', error);
+        res.status(500).json({ message: 'Server error updating PO' });
+    }
+};
 
 // @desc    Get all purchase orders
 // @route   GET /api/purchase-orders
@@ -37,6 +66,28 @@ export const createPurchaseOrder = async (req, res) => {
             createdBy: req.user._id
         });
 
+        // Notify Managers and Admins
+        const roles = await Role.find({ roleName: { $in: ['Admin', 'Manager'] } });
+        const roleIds = roles.map(r => r._id);
+        const usersToNotify = await User.find({ role: { $in: roleIds } });
+
+        for (const user of usersToNotify) {
+            const notif = await Notification.create({
+                recipient: user._id,
+                title: 'New Purchase Order',
+                message: `Purchase Order ${poNumber} has been created and requires approval.`,
+                type: 'info',
+                relatedId: po._id,
+                relatedModel: 'PurchaseOrder',
+                link: '/admin/purchase-orders',
+                actorRole: req.user.role ? req.user.role.roleName : 'Admin'
+            });
+            if (req.io) {
+                req.io.to(user._id.toString()).emit('new_notification', notif);
+            }
+        }
+
+        if (req.io) req.io.emit('data_updated', { type: 'PURCHASE_ORDER' });
         res.status(201).json(po);
     } catch (error) {
         console.error('Error creating PO:', error);
@@ -60,6 +111,33 @@ export const approvePurchaseOrder = async (req, res) => {
         po.approvedBy = req.user._id;
         await po.save();
 
+        // Notify Admin and Inventory Staff
+        const roles = await Role.find({ roleName: { $in: ['Admin', 'Inventory Staff'] } });
+        const roleIds = roles.map(r => r._id);
+        const usersToNotify = await User.find({ role: { $in: roleIds } });
+
+        let currentActorRole = 'Manager';
+        if (req.user && req.user.role) {
+            currentActorRole = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+        }
+
+        for (const user of usersToNotify) {
+            const notif = await Notification.create({
+                recipient: user._id,
+                title: 'Purchase Order Approved',
+                message: `Purchase Order ${po.poNumber} has been approved and is ready to receive.`,
+                type: 'success',
+                relatedId: po._id,
+                relatedModel: 'PurchaseOrder',
+                link: '/admin/purchase-orders',
+                actorRole: currentActorRole
+            });
+            if (req.io) {
+                req.io.to(user._id.toString()).emit('new_notification', notif);
+            }
+        }
+
+        if (req.io) req.io.emit('data_updated', { type: 'PURCHASE_ORDER' });
         res.json(po);
     } catch (error) {
         console.error('Error approving PO:', error);
@@ -81,17 +159,45 @@ export const receiveGoods = async (req, res) => {
 
         for (const item of po.items) {
             if (item.product) {
-                const product = await Product.findById(item.product._id);
-                if (product) {
-                    product.stock = (product.stock || 0) + item.quantity;
-                    await product.save();
-                }
+                await Product.findByIdAndUpdate(item.product._id, {
+                    $inc: { stock: item.quantity }
+                });
             }
         }
 
         po.status = 'Received';
         await po.save();
 
+        // Notify Managers and Admins about goods received
+        const rolesToNotify = await Role.find({ roleName: { $in: ['Admin', 'Manager'] } });
+        const roleIdsToNotify = rolesToNotify.map(r => r._id);
+        const usersToNotify = await User.find({ role: { $in: roleIdsToNotify } });
+
+        let currentActorRole = 'Inventory Staff';
+        if (req.user && req.user.role) {
+            currentActorRole = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+        }
+
+        for (const userToNotify of usersToNotify) {
+            const notif = await Notification.create({
+                recipient: userToNotify._id,
+                title: 'Goods Received',
+                message: `Purchase Order ${po.poNumber} has been received into inventory.`,
+                type: 'success',
+                relatedId: po._id,
+                relatedModel: 'PurchaseOrder',
+                link: '/admin/purchase-orders',
+                actorRole: currentActorRole
+            });
+            if (req.io) {
+                req.io.to(userToNotify._id.toString()).emit('new_notification', notif);
+            }
+        }
+
+        if (req.io) {
+            req.io.emit('data_updated', { type: 'PURCHASE_ORDER' });
+            req.io.emit('data_updated', { type: 'PRODUCT' });
+        }
         res.json(po);
     } catch (error) {
         console.error('Error receiving goods:', error);

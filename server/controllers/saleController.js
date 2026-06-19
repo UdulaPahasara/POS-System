@@ -5,6 +5,9 @@ import Invoice from '../model/Invoice.js';
 import Payment from '../model/Payment.js';
 import Customer from '../model/Customer.js';
 import LoyaltyTransaction from '../model/LoyaltyTransaction.js';
+import User from '../model/User.js';
+import Role from '../model/Role.js';
+import Notification from '../model/Notification.js';
 
 // @desc    Create new sale
 // @route   POST /api/sales
@@ -33,6 +36,10 @@ export const createSale = async (req, res) => {
                 console.warn(`[Stock Warning] Product ${product.name} is low on stock (${product.stock}). Sale proceeded.`);
             }
 
+            // Check if stock will drop below reorder level
+            const willBeLowStock = (product.stock - item.quantity) <= product.reorderLevel;
+            const wasLowStock = product.stock <= product.reorderLevel;
+
             // Deduct stock
             product.stock -= item.quantity;
             await product.save();
@@ -46,6 +53,28 @@ export const createSale = async (req, res) => {
                 reason: 'Sale Completed',
                 adminUser: req.user._id
             });
+
+            // Trigger notification if it just dropped below reorder level (prevent spam if it was already low)
+            if (willBeLowStock && !wasLowStock) {
+                const adminManagerRoles = await Role.find({ roleName: { $in: ['Admin', 'Manager', 'Inventory Staff'] } });
+                const adminManagerRoleIds = adminManagerRoles.map(r => r._id);
+                const usersToNotify = await User.find({ role: { $in: adminManagerRoleIds } });
+
+                for (const user of usersToNotify) {
+                    const notif = await Notification.create({
+                        recipient: user._id,
+                        title: 'Low Stock Alert',
+                        message: `Product "${product.name}" dropped below reorder level (${product.stock} remaining).`,
+                        type: product.stock <= 0 ? 'error' : 'warning',
+                        relatedId: product._id,
+                        relatedModel: 'Product',
+                        link: '/admin/products'
+                    });
+                    if (req.io) {
+                        req.io.to(user._id.toString()).emit('new_notification', notif);
+                    }
+                }
+            }
 
             // Discount calculation logic
             const price = Number(product.sellingPrice);
@@ -190,6 +219,10 @@ export const createSale = async (req, res) => {
             .populate('invoice')
             .populate('payments');
 
+        if (req.io) {
+            req.io.emit('data_updated', { type: 'SALE' });
+            req.io.emit('data_updated', { type: 'PRODUCT' });
+        }
         res.status(201).json(populatedSale);
 
     } catch (error) {

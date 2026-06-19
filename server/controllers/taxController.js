@@ -26,6 +26,7 @@ export const createTax = async (req, res) => {
         }
 
         const tax = await Tax.create({ taxName, rate });
+        if (req.io) req.io.emit('data_updated', { type: 'TAX' });
         res.status(201).json(tax);
     } catch (error) {
         console.error('Error creating tax:', error);
@@ -55,6 +56,7 @@ export const updateTax = async (req, res) => {
         tax.rate = req.body.rate !== undefined ? req.body.rate : tax.rate;
 
         const updatedTax = await tax.save();
+        if (req.io) req.io.emit('data_updated', { type: 'TAX' });
         res.json(updatedTax);
     } catch (error) {
         console.error('Error updating tax:', error);
@@ -73,6 +75,7 @@ export const deleteTax = async (req, res) => {
         }
 
         await tax.deleteOne();
+        if (req.io) req.io.emit('data_updated', { type: 'TAX' });
         res.json({ message: 'Tax removed' });
     } catch (error) {
         console.error('Error deleting tax:', error);
