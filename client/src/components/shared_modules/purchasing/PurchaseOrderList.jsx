@@ -9,11 +9,13 @@ import { useNotifications } from '../../../context/NotificationContext';
 import { purchasingApi } from '../../../services/purchasingApi';
 import { productsApi } from '../../../services/productsApi';
 import { suppliersApi } from '../../../services/suppliersApi';
+import { categoriesApi } from '../../../services/categoriesApi';
 
 const PurchaseOrderList = () => {
     const [pos, setPos] = useState([]);
     const [products, setProducts] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [openAdd, setOpenAdd] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [currentEditingPoId, setCurrentEditingPoId] = useState(null);
@@ -44,7 +46,7 @@ const PurchaseOrderList = () => {
     useEffect(() => {
         if (!socket) return;
         const handleUpdate = (data) => {
-            if (data.type === 'PURCHASE_ORDER' || data.type === 'PRODUCT' || data.type === 'SUPPLIER') {
+            if (data.type === 'PURCHASE_ORDER' || data.type === 'PRODUCT' || data.type === 'SUPPLIER' || data.type === 'CATEGORY') {
                 fetchData();
             }
         };
@@ -54,15 +56,17 @@ const PurchaseOrderList = () => {
 
     const fetchData = async () => {
         try {
-            const [poRes, pRes, sRes] = await Promise.all([
+            const [poRes, pRes, sRes, cRes] = await Promise.all([
                 purchasingApi.getPurchaseOrders(),
                 productsApi.getAllProducts(),
-                suppliersApi.getAllSuppliers()
+                suppliersApi.getAllSuppliers(),
+                categoriesApi.getAllCategories()
             ]);
             
             if (poRes) setPos(poRes);
             if (pRes) setProducts(pRes);
             if (sRes) setSuppliers(sRes);
+            if (cRes) setCategories(cRes);
         } catch (error) {
             console.error(error);
         }
@@ -145,6 +149,44 @@ const PurchaseOrderList = () => {
         setQty('');
     };
 
+    const selectedSupplierObj = suppliers.find(s => s._id === formData.supplier);
+    const supplierItemIds = selectedSupplierObj?.items?.map(i => i._id || i) || [];
+    
+    let availableProducts = [];
+    if (supplierItemIds.length > 0) {
+        availableProducts = products.filter(p => supplierItemIds.includes(p._id));
+    } else if (selectedSupplierObj) {
+        const supplierCatId = selectedSupplierObj.category?._id || selectedSupplierObj.category;
+        if (supplierCatId) {
+            availableProducts = products.filter(p => (p.category?._id || p.category) === supplierCatId);
+        }
+    }
+
+    const getProductDisplayInfo = (poItems) => {
+        if (!poItems || poItems.length === 0) return { name: 'N/A', category: 'N/A' };
+        
+        const firstItemProdId = poItems[0].product?._id || poItems[0].product;
+        const firstProd = products.find(p => p._id === firstItemProdId);
+        
+        let categoryName = 'Uncategorized';
+        if (firstProd) {
+            const catId = firstProd.category?._id || firstProd.category;
+            const cat = categories.find(c => c._id === catId);
+            if (cat) categoryName = cat.name;
+        }
+
+        const productNames = poItems.map(item => {
+            const prodId = item.product?._id || item.product;
+            const prod = products.find(p => p._id === prodId);
+            return prod ? prod.name : 'Unknown Product';
+        });
+        
+        return { 
+            name: productNames.join(', '), 
+            category: categoryName
+        };
+    };
+
     return (
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -210,6 +252,8 @@ const PurchaseOrderList = () => {
                         <TableRow>
                             <TableCell sx={{ color: '#94a3b8' }}>PO Number</TableCell>
                             <TableCell sx={{ color: '#94a3b8' }}>Supplier</TableCell>
+                            <TableCell sx={{ color: '#94a3b8' }}>Category</TableCell>
+                            <TableCell sx={{ color: '#94a3b8' }}>Product Name</TableCell>
                             <TableCell sx={{ color: '#94a3b8' }}>Total Cost</TableCell>
                             <TableCell sx={{ color: '#94a3b8' }}>Quantity</TableCell>
                             <TableCell sx={{ color: '#94a3b8' }}>Status</TableCell>
@@ -217,16 +261,20 @@ const PurchaseOrderList = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {pos.map((po) => (
+                        {pos.map((po) => {
+                            const { name, category } = getProductDisplayInfo(po.items);
+                            return (
                             <TableRow key={po._id}>
                                 <TableCell sx={{ color: '#fff' }}>{po.poNumber}</TableCell>
                                 <TableCell sx={{ color: '#fff' }}>{po.supplier?.supplierName}</TableCell>
+                                <TableCell sx={{ color: '#fff' }}>{category}</TableCell>
+                                <TableCell sx={{ color: '#fff' }}>{name}</TableCell>
                                 <TableCell sx={{ color: '#fff' }}>LKR {po.totalCost?.toFixed(2)}</TableCell>
                                 <TableCell sx={{ color: '#fff' }}>{po.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}</TableCell>
                                 <TableCell sx={{ color: '#fff' }}>{po.status}</TableCell>
                                 <TableCell align="right">
                                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                                        {canCreate && po.status === 'Pending' && (
+                                        {canCreate && roleName !== 'Manager' && po.status === 'Pending' && (
                                             <Button size="small" variant="outlined" color="info" sx={{ fontWeight: 600, borderRadius: 2 }} onClick={() => handleEdit(po)}>Edit</Button>
                                         )}
                                         {canApprove && po.status === 'Pending' && (
@@ -238,7 +286,8 @@ const PurchaseOrderList = () => {
                                     </Box>
                                 </TableCell>
                             </TableRow>
-                        ))}
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </TableContainer>
@@ -263,7 +312,12 @@ const PurchaseOrderList = () => {
                 <DialogContent sx={{ pt: 3 }}>
                     <TextField 
                         select fullWidth label="Supplier" margin="dense"
-                        value={formData.supplier} onChange={(e) => setFormData({...formData, supplier: e.target.value})}
+                        value={formData.supplier} 
+                        onChange={(e) => {
+                            setFormData({...formData, supplier: e.target.value, items: []});
+                            setSelectedProduct('');
+                            setQty('');
+                        }}
                         sx={inputStyles}
                     >
                         {suppliers.map(s => <MenuItem key={s._id} value={s._id}>{s.supplierName}</MenuItem>)}
@@ -274,14 +328,20 @@ const PurchaseOrderList = () => {
                             select fullWidth label="Product"
                             value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)}
                             sx={inputStyles}
+                            disabled={!formData.supplier}
                         >
-                            {products.map(p => <MenuItem key={p._id} value={p._id}>{p.name}</MenuItem>)}
+                            {availableProducts.length === 0 && formData.supplier ? (
+                                <MenuItem disabled value=""><em>No products assigned to this supplier</em></MenuItem>
+                            ) : (
+                                availableProducts.map(p => <MenuItem key={p._id} value={p._id}>{p.name}</MenuItem>)
+                            )}
                         </TextField>
                         <TextField 
                             type="number" label="Qty" sx={{ ...inputStyles, width: 100 }}
                             value={qty} onChange={(e) => setQty(e.target.value)}
+                            disabled={!formData.supplier}
                         />
-                        <Button variant="contained" onClick={addItem} sx={{ height: '53px', bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>Add</Button>
+                        <Button variant="contained" onClick={addItem} disabled={!formData.supplier} sx={{ height: '53px', bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>Add</Button>
                     </Box>
 
                     <Box sx={{ mt: 3, bgcolor: 'rgba(255,255,255,0.02)', p: 2, borderRadius: 2 }}>

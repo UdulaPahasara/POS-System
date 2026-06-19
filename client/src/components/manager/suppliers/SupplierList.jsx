@@ -9,6 +9,7 @@ import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, History as Hist
 import { useNotifications } from '../../../context/NotificationContext';
 import { suppliersApi } from '../../../services/suppliersApi';
 import { categoriesApi } from '../../../services/categoriesApi';
+import { productsApi } from '../../../services/productsApi';
 
 const SupplierList = () => {
     const [suppliers, setSuppliers] = useState([]);
@@ -17,10 +18,11 @@ const SupplierList = () => {
     const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
     const [supplierHistory, setSupplierHistory] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [products, setProducts] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
     const [currentId, setCurrentId] = useState(null);
     
-    const defaultForm = { supplierName: '', category: '', contactPerson: '', phone: '', email: '', address: '' };
+    const defaultForm = { supplierName: '', category: '', items: [], contactPerson: '', phone: '', email: '', address: '' };
     const [formData, setFormData] = useState(defaultForm);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -42,18 +44,29 @@ const SupplierList = () => {
         }
     };
 
+    const fetchProducts = async () => {
+        try {
+            const data = await productsApi.getAllProducts();
+            if (data) setProducts(data);
+        } catch (error) {
+            console.error('Error fetching products:', error);
+        }
+    };
+
     useEffect(() => {
         fetchSuppliers();
         fetchCategories();
+        fetchProducts();
     }, []);
 
     const { socket } = useNotifications();
     useEffect(() => {
         if (!socket) return;
         const handleUpdate = (data) => {
-            if (data.type === 'SUPPLIER' || data.type === 'CATEGORY') {
+            if (data.type === 'SUPPLIER' || data.type === 'CATEGORY' || data.type === 'PRODUCT') {
                 fetchSuppliers();
                 if (data.type === 'CATEGORY') fetchCategories();
+                if (data.type === 'PRODUCT') fetchProducts();
             }
         };
         socket.on('data_updated', handleUpdate);
@@ -67,6 +80,7 @@ const SupplierList = () => {
             setFormData({ 
                 supplierName: supplier.supplierName || '', 
                 category: supplier.category?._id || supplier.category || '',
+                items: supplier.items?.map(i => i._id || i) || [],
                 contactPerson: supplier.contactPerson || '', 
                 phone: supplier.phone || '', 
                 email: supplier.email || '', 
@@ -208,11 +222,31 @@ const SupplierList = () => {
                                 labelId="category-select-label"
                                 value={formData.category}
                                 label="Category"
-                                onChange={(e) => setFormData({...formData, category: e.target.value})}
+                                onChange={(e) => setFormData({...formData, category: e.target.value, items: []})}
                             >
                                 <MenuItem value=""><em>None</em></MenuItem>
                                 {categories.map(cat => (
                                     <MenuItem key={cat._id} value={cat._id}>{cat.name}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
+                    <Box sx={{ mb: 2 }}>
+                        <FormControl fullWidth sx={inputStyles}>
+                            <InputLabel id="items-select-label">Items (Products)</InputLabel>
+                            <Select
+                                labelId="items-select-label"
+                                multiple
+                                value={formData.items}
+                                label="Items (Products)"
+                                onChange={(e) => setFormData({...formData, items: e.target.value})}
+                                renderValue={(selected) => selected.map(id => products.find(p => p._id === id)?.name).filter(Boolean).join(', ')}
+                            >
+                                {(formData.category 
+                                    ? products.filter(p => (p.category?._id || p.category) === formData.category)
+                                    : products
+                                ).map(prod => (
+                                    <MenuItem key={prod._id} value={prod._id}>{prod.name}</MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
