@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { 
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, Button, IconButton,
@@ -13,6 +14,8 @@ import { suppliersApi } from '../../../services/suppliersApi';
 import { categoriesApi } from '../../../services/categoriesApi';
 
 const PurchaseReturnList = () => {
+    const location = useLocation();
+    const [highlightedPrId, setHighlightedPrId] = useState(null);
     const [returns, setReturns] = useState([]);
     const [products, setProducts] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
@@ -56,6 +59,27 @@ const PurchaseReturnList = () => {
         socket.on('data_updated', handleUpdate);
         return () => socket.off('data_updated', handleUpdate);
     }, [socket]);
+
+    useEffect(() => {
+        if (location.state?.highlightPrId && returns.length > 0) {
+            const id = location.state.highlightPrId;
+            setHighlightedPrId(id);
+            
+            setTimeout(() => {
+                const element = document.getElementById('pr-row-' + id);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
+            
+            const timer = setTimeout(() => {
+                setHighlightedPrId(null);
+                window.history.replaceState({}, document.title);
+            }, 3000);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [location.state, returns]);
 
     useEffect(() => {
         if (selectedProduct) {
@@ -232,7 +256,15 @@ const PurchaseReturnList = () => {
                             returns.map((pr) => {
                                 const { name, category } = getProductDisplayInfo(pr.items);
                                 return (
-                                <TableRow key={pr._id} sx={{ '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' } }}>
+                                <TableRow 
+                                    key={pr._id} 
+                                    id={`pr-row-${pr._id}`}
+                                    sx={{ 
+                                        '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
+                                        bgcolor: highlightedPrId === pr._id ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                                        transition: 'background-color 0.5s ease'
+                                    }}
+                                >
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{pr.prNumber}</TableCell>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{pr.supplier?.supplierName}</TableCell>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{category}</TableCell>

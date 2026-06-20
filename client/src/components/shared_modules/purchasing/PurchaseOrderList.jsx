@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { 
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, Button, IconButton,
@@ -12,6 +13,8 @@ import { suppliersApi } from '../../../services/suppliersApi';
 import { categoriesApi } from '../../../services/categoriesApi';
 
 const PurchaseOrderList = () => {
+    const location = useLocation();
+    const [highlightedPoId, setHighlightedPoId] = useState(null);
     const [pos, setPos] = useState([]);
     const [products, setProducts] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
@@ -53,6 +56,27 @@ const PurchaseOrderList = () => {
         socket.on('data_updated', handleUpdate);
         return () => socket.off('data_updated', handleUpdate);
     }, [socket]);
+
+    useEffect(() => {
+        if (location.state?.highlightPoId && pos.length > 0) {
+            const id = location.state.highlightPoId;
+            setHighlightedPoId(id);
+            
+            setTimeout(() => {
+                const element = document.getElementById('po-row-' + id);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
+            
+            const timer = setTimeout(() => {
+                setHighlightedPoId(null);
+                window.history.replaceState({}, document.title);
+            }, 3000);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [location.state, pos]);
 
     const fetchData = async () => {
         try {
@@ -264,7 +288,15 @@ const PurchaseOrderList = () => {
                         {pos.map((po) => {
                             const { name, category } = getProductDisplayInfo(po.items);
                             return (
-                            <TableRow key={po._id}>
+                            <TableRow 
+                                key={po._id} 
+                                id={`po-row-${po._id}`}
+                                sx={{ 
+                                    '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
+                                    bgcolor: highlightedPoId === po._id ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                                    transition: 'background-color 0.5s ease'
+                                }}
+                            >
                                 <TableCell sx={{ color: '#fff' }}>{po.poNumber}</TableCell>
                                 <TableCell sx={{ color: '#fff' }}>{po.supplier?.supplierName}</TableCell>
                                 <TableCell sx={{ color: '#fff' }}>{category}</TableCell>

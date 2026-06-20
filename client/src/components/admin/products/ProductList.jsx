@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { 
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, IconButton, Button,
@@ -22,6 +23,8 @@ import { productsApi } from '../../../services/productsApi';
 import { categoriesApi } from '../../../services/categoriesApi';
 
 const ProductList = () => {
+    const location = useLocation();
+    const [highlightedProductId, setHighlightedProductId] = useState(null);
     const [products, setProducts] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -79,6 +82,28 @@ const ProductList = () => {
         socket.on('data_updated', handleUpdate);
         return () => socket.off('data_updated', handleUpdate);
     }, [socket]);
+
+    useEffect(() => {
+        if (location.state?.highlightProductId && products.length > 0) {
+            const id = location.state.highlightProductId;
+            setHighlightedProductId(id);
+            
+            setTimeout(() => {
+                const element = document.getElementById('product-row-' + id);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
+            
+            const timer = setTimeout(() => {
+                setHighlightedProductId(null);
+                // Clean up state
+                window.history.replaceState({}, document.title);
+            }, 3000);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [location.state, products]);
 
     const handleOpenAdd = () => {
         setIsEditing(false);
@@ -254,7 +279,15 @@ const ProductList = () => {
                     </TableHead>
                     <TableBody>
                         {filteredProducts.map((product) => (
-                            <TableRow key={product._id} sx={{ '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' } }}>
+                            <TableRow 
+                                key={product._id} 
+                                id={`product-row-${product._id}`}
+                                sx={{ 
+                                    '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
+                                    bgcolor: highlightedProductId === product._id ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                                    transition: 'background-color 0.5s ease'
+                                }}
+                            >
                                 <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <Avatar 
                                         src={product.imageUrl ? `http://localhost:5000${product.imageUrl}` : undefined} 

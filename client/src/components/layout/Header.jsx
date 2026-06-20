@@ -34,6 +34,10 @@ const AdminHeader = ({ handleDrawerToggle }) => {
         
         if (notif.relatedModel === 'Product' && notif.link) {
             navigate(notif.link, { state: { highlightProductId: notif.relatedId } });
+        } else if (notif.relatedModel === 'PurchaseOrder' && notif.link) {
+            navigate(notif.link, { state: { highlightPoId: notif.relatedId } });
+        } else if (notif.relatedModel === 'PurchaseReturn' && notif.link) {
+            navigate(notif.link, { state: { highlightPrId: notif.relatedId } });
         } else if (isAdmin) {
             // Admins just see the message box, no direct navigation
             setSelectedNotification(notif);
