@@ -10,7 +10,7 @@ import {
     Person
 } from '@mui/icons-material';
 import { useNotifications } from '../../context/NotificationContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 
 // Import Role Icons
@@ -25,6 +25,22 @@ const AdminHeader = ({ handleDrawerToggle }) => {
     const [selectedNotification, setSelectedNotification] = useState(null);
     const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Helper to get formatted page title from URL
+    const getPageTitle = (pathname) => {
+        const parts = pathname.split('/').filter(Boolean);
+        if (parts.length === 0) return 'Dashboard';
+        
+        // Use the last segment of the path (e.g., 'purchase-orders')
+        const lastSegment = parts[parts.length - 1];
+        
+        // Format string: split by hyphen, capitalize each word, join with space
+        return lastSegment
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    };
     
     const isAdmin = user?.role && (typeof user.role === 'object' ? user.role.roleName : user.role) === 'Admin';
 
@@ -115,7 +131,7 @@ const AdminHeader = ({ handleDrawerToggle }) => {
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6" sx={{ fontWeight: 600, display: { xs: 'none', sm: 'block' } }}>
-                        Dashboard
+                        {getPageTitle(location.pathname)}
                     </Typography>
                 </Box>
 
