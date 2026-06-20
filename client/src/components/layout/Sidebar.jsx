@@ -34,7 +34,6 @@ const rawNavItems = [
 const AdminSidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
     const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
@@ -54,22 +53,6 @@ const AdminSidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
     const handleNavigation = (path) => {
         navigate(path);
         if (mobileOpen) handleDrawerToggle(); // Close drawer on mobile after clicking
-    };
-
-    const handleLogoutConfirm = () => {
-        setLogoutDialogOpen(true);
-    };
-
-    const handleLogout = () => {
-        setLogoutDialogOpen(false);
-        // Clear all session tokens
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('user');
-        
-        navigate('/login');
-        if (mobileOpen) handleDrawerToggle();
     };
 
     const drawerContent = (
@@ -132,24 +115,6 @@ const AdminSidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
                     );
                 })}
             </List>
-
-            <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-            
-            <Box sx={{ p: 2 }}>
-                <ListItemButton 
-                    onClick={handleLogoutConfirm}
-                    sx={{
-                        borderRadius: 2,
-                        color: '#ef4444',
-                        '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)' }
-                    }}
-                >
-                    <ListItemIcon sx={{ color: '#ef4444', minWidth: 40 }}>
-                        <LogoutIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Logout" sx={{ '& .MuiListItemText-primary': { fontWeight: 600 } }} />
-                </ListItemButton>
-            </Box>
         </Box>
     );
 
@@ -180,33 +145,6 @@ const AdminSidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
             >
                 {drawerContent}
             </Drawer>
-
-            <Dialog
-                open={logoutDialogOpen}
-                onClose={() => setLogoutDialogOpen(false)}
-                PaperProps={{
-                    sx: {
-                        bgcolor: '#1e293b',
-                        color: '#fff',
-                        borderRadius: 2
-                    }
-                }}
-            >
-                <DialogTitle>Confirm Logout</DialogTitle>
-                <DialogContent>
-                    <DialogContentText sx={{ color: '#94a3b8' }}>
-                        Are you sure you want to logout?
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setLogoutDialogOpen(false)} sx={{ color: '#94a3b8' }}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleLogout} variant="contained" color="error" sx={{ borderRadius: 2 }}>
-                        Logout
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Box>
     );
 };

@@ -4,5 +4,7 @@ export const usersApi = {
     getAllUsers: () => api.get('/users'),
     createUser: (userData) => api.post('/users', userData),
     updateUser: (id, userData) => api.put(`/users/${id}`, userData),
-    deleteUser: (id) => api.delete(`/users/${id}`)
+    deleteUser: (id) => api.delete(`/users/${id}`),
+    getProfile: () => api.get('/users/profile'),
+    updateProfile: (userData) => api.put('/users/profile', userData)
 };

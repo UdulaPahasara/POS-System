@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, IconButton, TextField, InputAdornment, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
+import { Box, Typography, Button, IconButton, TextField, InputAdornment, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Menu, MenuItem, Avatar } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
@@ -7,6 +7,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ClearIcon from '@mui/icons-material/Clear';
 import LogoutIcon from '@mui/icons-material/Logout';
+import CloseIcon from '@mui/icons-material/Close';
 import ProductGrid from './ProductGrid';
 import Cart from './Cart';
 import CheckoutDialog from './CheckoutDialog';
@@ -18,6 +19,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import { productsApi } from '../../services/productsApi';
 import { posApi } from '../../services/posApi';
 import { settingsApi } from '../../services/settingsApi';
+import UserProfile from '../common/UserProfile';
 
 const POSLayout = () => {
     const navigate = useNavigate();
@@ -54,6 +56,10 @@ const POSLayout = () => {
     const [manualBarcode, setManualBarcode] = useState('');
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
     const [systemSettings, setSystemSettings] = useState(null);
+
+    // Profile state
+    const [profileAnchorEl, setProfileAnchorEl] = useState(null);
+    const [showProfile, setShowProfile] = useState(false);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -264,6 +270,20 @@ const POSLayout = () => {
     }, 0);
     const total = subtotal + tax;
 
+    if (showProfile) {
+        return (
+            <Box sx={{ position: 'relative', height: '100vh', overflow: 'auto', bgcolor: '#0f172a' }}>
+                <IconButton 
+                    onClick={() => setShowProfile(false)} 
+                    sx={{ position: 'absolute', top: 16, right: 16, zIndex: 10, bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}
+                >
+                    <CloseIcon sx={{ color: '#fff' }} />
+                </IconButton>
+                <UserProfile />
+            </Box>
+        );
+    }
+
     return (
         <Box sx={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', bgcolor: '#0f172a' }}>
             
@@ -282,9 +302,52 @@ const POSLayout = () => {
                     <Typography variant="h5" sx={{ color: '#fff', fontWeight: 700, flexGrow: 1 }}>
                         POS System
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#94a3b8', mr: 3 }}>
-                        User: {user.username} ({userRoleName})
-                    </Typography>
+                    
+                    {/* User Profile Dropdown */}
+                    <Box 
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 3, cursor: 'pointer', p: 0.5, borderRadius: 1, '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
+                        onClick={(e) => setProfileAnchorEl(e.currentTarget)}
+                    >
+                        <Avatar sx={{ bgcolor: '#3b82f6', width: 32, height: 32, fontSize: 14 }}>
+                            {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                        </Avatar>
+                        <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2, color: '#fff' }}>
+                                {user?.username}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                                {userRoleName}
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    <Menu
+                        anchorEl={profileAnchorEl}
+                        open={Boolean(profileAnchorEl)}
+                        onClose={() => setProfileAnchorEl(null)}
+                        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                        PaperProps={{
+                            sx: {
+                                mt: 1.5,
+                                bgcolor: '#1e293b',
+                                color: '#fff',
+                                width: 200,
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                                borderRadius: 2
+                            }
+                        }}
+                    >
+                        <MenuItem onClick={() => { setProfileAnchorEl(null); setShowProfile(true); }} sx={{ py: 1.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}>
+                            <PersonIcon sx={{ mr: 2, color: '#94a3b8', fontSize: 20 }} />
+                            My Profile
+                        </MenuItem>
+                        <MenuItem onClick={() => { setProfileAnchorEl(null); handleLogoutClick(); }} sx={{ py: 1.5, color: '#ef4444', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
+                            <LogoutIcon sx={{ mr: 2, color: '#ef4444', fontSize: 20 }} />
+                            Logout
+                        </MenuItem>
+                    </Menu>
                     
                     {/* Barcode Scanner Actions */}
                     <Box sx={{ display: 'flex', alignItems: 'center', mr: 2, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>

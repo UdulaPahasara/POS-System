@@ -1,6 +1,62 @@
 import User from '../model/User.js';
 import bcrypt from 'bcryptjs';
 
+// @desc    Get logged in user profile
+// @route   GET /api/users/profile
+// @access  Private
+export const getUserProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select('-password').populate('role', 'roleName');
+        if (user) {
+            res.json(user);
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        res.status(500).json({ message: 'Server error fetching profile' });
+    }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+export const updateUserProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            user.username = req.body.username || user.username;
+            user.email = req.body.email || user.email;
+            user.phone = req.body.phone !== undefined ? req.body.phone : user.phone;
+
+            if (req.body.password) {
+                if (!req.body.currentPassword) {
+                    return res.status(400).json({ message: 'Please provide current password to change password.' });
+                }
+                const isMatch = await bcrypt.compare(req.body.currentPassword, user.password);
+                if (!isMatch) {
+                    return res.status(401).json({ message: 'Current password is incorrect.' });
+                }
+                const salt = await bcrypt.genSalt(10);
+                user.password = await bcrypt.hash(req.body.password, salt);
+            }
+
+            const updatedUser = await user.save();
+            const populatedUser = await User.findById(updatedUser._id).select('-password').populate('role', 'roleName');
+            
+            if (req.io) req.io.emit('data_updated', { type: 'USER' });
+            
+            res.json(populatedUser);
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Error updating user profile:', error);
+        res.status(500).json({ message: 'Server error updating profile' });
+    }
+};
+
 // @desc    Get all users
 // @route   GET /api/users
 // @access  Private (Admin)

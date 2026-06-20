@@ -5,7 +5,9 @@ import {
     Notifications as NotificationsIcon,
     Search as SearchIcon,
     Circle as CircleIcon,
-    DoneAll as DoneAllIcon
+    DoneAll as DoneAllIcon,
+    Logout,
+    Person
 } from '@mui/icons-material';
 import { useNotifications } from '../../context/NotificationContext';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +21,7 @@ import staffIcon from '../../assets/MesageIcon/staff.webp';
 const AdminHeader = ({ handleDrawerToggle }) => {
     const [user, setUser] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
+    const [profileAnchorEl, setProfileAnchorEl] = useState(null);
     const [selectedNotification, setSelectedNotification] = useState(null);
     const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
     const navigate = useNavigate();
@@ -27,6 +30,25 @@ const AdminHeader = ({ handleDrawerToggle }) => {
 
     const handleOpenNotifications = (event) => setAnchorEl(event.currentTarget);
     const handleCloseNotifications = () => setAnchorEl(null);
+
+    const handleOpenProfile = (event) => setProfileAnchorEl(event.currentTarget);
+    const handleCloseProfile = () => setProfileAnchorEl(null);
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        navigate('/login');
+    };
+
+    const handleGoToProfile = () => {
+        handleCloseProfile();
+        // The current path starts with /admin, /manager, etc. We just replace the last part with /profile
+        // e.g. /admin/dashboard -> /admin/profile
+        const basePath = window.location.pathname.split('/')[1];
+        navigate(`/${basePath}/profile`);
+    };
 
     const handleNotificationClick = (notif) => {
         if (!notif.isRead) markAsRead(notif._id);
@@ -126,7 +148,10 @@ const AdminHeader = ({ handleDrawerToggle }) => {
                     </IconButton>
 
                     {/* User Profile */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1, cursor: 'pointer' }}>
+                    <Box 
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1, cursor: 'pointer' }}
+                        onClick={handleOpenProfile}
+                    >
                         <Avatar sx={{ bgcolor: '#3b82f6', width: 35, height: 35 }}>
                             {user?.username ? user.username.charAt(0).toUpperCase() : 'A'}
                         </Avatar>
@@ -141,6 +166,35 @@ const AdminHeader = ({ handleDrawerToggle }) => {
                     </Box>
                 </Box>
             </Toolbar>
+
+            {/* Profile Dropdown */}
+            <Menu
+                anchorEl={profileAnchorEl}
+                open={Boolean(profileAnchorEl)}
+                onClose={handleCloseProfile}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                PaperProps={{
+                    sx: {
+                        mt: 1.5,
+                        bgcolor: '#1e293b',
+                        color: '#fff',
+                        width: 200,
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                        borderRadius: 2
+                    }
+                }}
+            >
+                <MenuItem onClick={handleGoToProfile} sx={{ py: 1.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}>
+                    <Person sx={{ mr: 2, color: '#94a3b8', fontSize: 20 }} />
+                    My Profile
+                </MenuItem>
+                <MenuItem onClick={handleLogout} sx={{ py: 1.5, color: '#ef4444', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
+                    <Logout sx={{ mr: 2, color: '#ef4444', fontSize: 20 }} />
+                    Logout
+                </MenuItem>
+            </Menu>
 
             {/* Notifications Dropdown */}
             <Menu

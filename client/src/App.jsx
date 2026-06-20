@@ -17,6 +17,7 @@ import PurchaseOrderList from './components/shared_modules/purchasing/PurchaseOr
 import PurchaseReturnList from './components/shared_modules/purchasing/PurchaseReturnList';
 import SupplierList from './components/manager/suppliers/SupplierList';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import UserProfile from './components/common/UserProfile';
 import './App.css';
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -47,6 +48,7 @@ function App() {
             <Route element={<ProtectedRoute allowedRoles={['Admin', 'Manager', 'Inventory Staff']} />}>
                 <Route path="/:roleBase" element={<AdminLayout />}>
                     <Route index element={<Navigate to="dashboard" replace />} />
+                    <Route path="profile" element={<UserProfile />} />
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="inventory-dashboard" element={<InventoryDashboard />} />
                     <Route path="products" element={<ProductList />} />

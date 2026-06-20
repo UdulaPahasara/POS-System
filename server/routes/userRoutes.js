@@ -4,13 +4,21 @@ import {
     getUsers,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    getUserProfile,
+    updateUserProfile
 } from '../controllers/userController.js';
 
 const router = express.Router();
 
-// All routes require authentication and Admin role
 router.use(protect);
+
+// Profile routes - accessible to any authenticated user
+router.route('/profile')
+    .get(getUserProfile)
+    .put(updateUserProfile);
+
+// Admin only routes
 router.use(authorize('Admin'));
 
 router.route('/')
