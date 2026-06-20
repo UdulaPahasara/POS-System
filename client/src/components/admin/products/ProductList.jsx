@@ -186,10 +186,12 @@ const ProductList = () => {
         setSnackbar(prev => ({ ...prev, open: false }));
     };
 
-    const filteredProducts = products.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        p.sku.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredProducts = products.filter(p => {
+        const catName = typeof p.category === 'object' ? (p.category?.name || '') : (p.category || '');
+        return p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+               p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               catName.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
     return (
         <Box>
@@ -217,7 +219,7 @@ const ProductList = () => {
             <Paper sx={{ p: 2, bgcolor: '#1e293b', borderRadius: 2, mb: 3 }}>
                 <TextField
                     fullWidth
-                    placeholder="Search by product name or SKU..."
+                    placeholder="Search by product name, SKU, or Category..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     InputProps={{

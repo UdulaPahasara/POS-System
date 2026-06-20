@@ -146,28 +146,29 @@ const AdminHeader = ({ handleDrawerToggle }) => {
                 PaperProps={{
                     sx: {
                         mt: 1.5,
-                        bgcolor: '#1e293b',
-                        color: '#fff',
-                        width: 320,
-                        maxHeight: 400,
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+                        bgcolor: '#ffffff',
+                        color: '#1e293b',
+                        width: 350,
+                        maxHeight: 450,
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                        borderRadius: 2
                     }
                 }}
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-                <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                    <Typography variant="subtitle1" fontWeight={600}>Notifications</Typography>
+                <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
+                    <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#0f172a' }}>Notifications</Typography>
                     {unreadCount > 0 && (
-                        <IconButton size="small" onClick={markAllAsRead} title="Mark all as read" sx={{ color: '#3b82f6' }}>
+                        <IconButton size="small" onClick={markAllAsRead} title="Mark all as read" sx={{ color: '#3b82f6', bgcolor: '#eff6ff' }}>
                             <DoneAllIcon fontSize="small" />
                         </IconButton>
                     )}
                 </Box>
                 {notifications.length === 0 ? (
-                    <Box sx={{ p: 3, textAlign: 'center', color: '#94a3b8' }}>
-                        <Typography variant="body2">No notifications</Typography>
+                    <Box sx={{ p: 4, textAlign: 'center', color: '#64748b' }}>
+                        <Typography variant="body2">No new notifications</Typography>
                     </Box>
                 ) : (
                     notifications.map(notif => (
@@ -175,34 +176,37 @@ const AdminHeader = ({ handleDrawerToggle }) => {
                             key={notif._id} 
                             onClick={() => handleNotificationClick(notif)}
                             sx={{ 
-                                py: 1.5, 
+                                py: 2, 
                                 px: 2, 
-                                borderBottom: '1px solid rgba(255,255,255,0.05)',
-                                bgcolor: notif.isRead ? 'transparent' : 'rgba(59, 130, 246, 0.05)',
+                                borderBottom: '1px solid #f8fafc',
+                                bgcolor: notif.isRead ? 'transparent' : '#f0f9ff',
                                 whiteSpace: 'normal',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' }
+                                transition: 'all 0.2s',
+                                '&:hover': { bgcolor: '#f1f5f9' }
                             }}
                         >
-                            <Box sx={{ display: 'flex', gap: 1.5, width: '100%' }}>
+                            <Box sx={{ display: 'flex', gap: 2, width: '100%', alignItems: 'flex-start' }}>
                                 <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    {!notif.isRead && <CircleIcon sx={{ color: '#3b82f6', fontSize: 10 }} />}
+                                    {!notif.isRead && <CircleIcon sx={{ color: '#3b82f6', fontSize: 12, position: 'absolute', left: 8 }} />}
                                     {getRoleIcon(notif.actorRole) ? (
-                                        <img src={getRoleIcon(notif.actorRole)} alt={notif.actorRole} style={{ width: 24, height: 24, borderRadius: '50%' }} />
+                                        <img src={getRoleIcon(notif.actorRole)} alt={notif.actorRole} style={{ width: 32, height: 32, borderRadius: '50%' }} />
+                                    ) : (notif.actorRole === 'System' || !notif.actorRole) && getRoleIcon(user?.role && (typeof user.role === 'object' ? user.role.roleName : user.role)) ? (
+                                        <img src={getRoleIcon(user?.role && (typeof user.role === 'object' ? user.role.roleName : user.role))} alt="System Alert" style={{ width: 32, height: 32, borderRadius: '50%' }} />
                                     ) : (
-                                        <Avatar sx={{ width: 24, height: 24, bgcolor: '#3b82f6', fontSize: 12 }}>
+                                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#3b82f6', fontSize: 14 }}>
                                             {notif.actorRole ? notif.actorRole.charAt(0) : 'S'}
                                         </Avatar>
                                     )}
                                 </Box>
-                                <Box>
-                                    <Typography variant="body2" sx={{ fontWeight: notif.isRead ? 400 : 600, color: notif.type === 'error' ? '#ef4444' : '#fff' }}>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: notif.isRead ? 500 : 700, color: notif.type === 'error' ? '#ef4444' : '#0f172a', lineHeight: 1.3, mb: 0.5 }}>
                                         {notif.title}
                                     </Typography>
-                                    <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', mt: 0.5 }}>
+                                    <Typography variant="caption" sx={{ color: '#475569', display: 'block', lineHeight: 1.4 }}>
                                         {notif.message}
                                     </Typography>
-                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.3)', mt: 0.5, display: 'block' }}>
-                                        {new Date(notif.createdAt).toLocaleString()}
+                                    <Typography variant="caption" sx={{ color: '#94a3b8', mt: 1, display: 'block', fontWeight: 500 }}>
+                                        {new Date(notif.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                     </Typography>
                                 </Box>
                             </Box>

@@ -10,11 +10,13 @@ import { useNotifications } from '../../../context/NotificationContext';
 import { purchasingApi } from '../../../services/purchasingApi';
 import { productsApi } from '../../../services/productsApi';
 import { suppliersApi } from '../../../services/suppliersApi';
+import { categoriesApi } from '../../../services/categoriesApi';
 
 const PurchaseReturnList = () => {
     const [returns, setReturns] = useState([]);
     const [products, setProducts] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [openAdd, setOpenAdd] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [currentEditingPoId, setCurrentEditingPoId] = useState(null);
@@ -69,18 +71,45 @@ const PurchaseReturnList = () => {
 
     const fetchData = async () => {
         try {
-            const [prData, pData, sData] = await Promise.all([
+            const [prData, pData, sData, cData] = await Promise.all([
                 purchasingApi.getPurchaseReturns(),
                 productsApi.getAllProducts(),
-                suppliersApi.getAllSuppliers()
+                suppliersApi.getAllSuppliers(),
+                categoriesApi.getAllCategories()
             ]);
             
             if (prData) setReturns(prData);
             if (pData) setProducts(pData);
             if (sData) setSuppliers(sData);
+            if (cData) setCategories(cData);
         } catch (error) {
             console.error('Error fetching data:', error);
         }
+    };
+
+    const getProductDisplayInfo = (poItems) => {
+        if (!poItems || poItems.length === 0) return { name: 'N/A', category: 'N/A' };
+        
+        const firstItemProdId = poItems[0].product?._id || poItems[0].product;
+        const firstProd = products.find(p => p._id === firstItemProdId);
+        
+        let categoryName = 'Uncategorized';
+        if (firstProd) {
+            const catId = firstProd.category?._id || firstProd.category;
+            const cat = categories.find(c => c._id === catId);
+            if (cat) categoryName = cat.name;
+        }
+
+        const productNames = poItems.map(item => {
+            const prodId = item.product?._id || item.product;
+            const prod = products.find(p => p._id === prodId);
+            return prod ? prod.name : 'Unknown Product';
+        });
+        
+        return { 
+            name: productNames.join(', '), 
+            category: categoryName
+        };
     };
 
     const handleCreate = async () => {
@@ -185,6 +214,8 @@ const PurchaseReturnList = () => {
                         <TableRow>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Return Number</TableCell>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Supplier</TableCell>
+                            <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Category</TableCell>
+                            <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Product Name</TableCell>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Reason</TableCell>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Total Refund</TableCell>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Quantity</TableCell>
@@ -195,15 +226,19 @@ const PurchaseReturnList = () => {
                     <TableBody>
                         {returns.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} align="center" sx={{ color: '#94a3b8', py: 4, borderBottom: 'none' }}>No returns found.</TableCell>
+                                <TableCell colSpan={8} align="center" sx={{ color: '#94a3b8', py: 4, borderBottom: 'none' }}>No returns found.</TableCell>
                             </TableRow>
                         ) : (
-                            returns.map((pr) => (
+                            returns.map((pr) => {
+                                const { name, category } = getProductDisplayInfo(pr.items);
+                                return (
                                 <TableRow key={pr._id} sx={{ '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' } }}>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{pr.prNumber}</TableCell>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{pr.supplier?.supplierName}</TableCell>
+                                    <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{category}</TableCell>
+                                    <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{name}</TableCell>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{pr.reason}</TableCell>
-                                    <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>LKR {pr.totalRefund?.toFixed(2)}</TableCell>
+                                    <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', whiteSpace: 'nowrap' }}>LKR {pr.totalRefund?.toFixed(2)}</TableCell>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{pr.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}</TableCell>
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{pr.status}</TableCell>
                                     <TableCell align="right" sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -218,7 +253,8 @@ const PurchaseReturnList = () => {
                                         )}
                                     </TableCell>
                                 </TableRow>
-                            ))
+                                );
+                            })
                         )}
                     </TableBody>
                 </Table>
@@ -244,7 +280,13 @@ const PurchaseReturnList = () => {
                 <DialogContent sx={{ pt: 3 }}>
                     <TextField 
                         select fullWidth label="Supplier" margin="dense"
-                        value={formData.supplier} onChange={(e) => setFormData({...formData, supplier: e.target.value})}
+                        value={formData.supplier} 
+                        onChange={(e) => {
+                            setFormData({...formData, supplier: e.target.value, items: []});
+                            setSelectedProduct('');
+                            setQty('');
+                            setRefundAmount('');
+                        }}
                         sx={inputStyles}
                     >
                         {suppliers.length === 0 && <MenuItem disabled value="">No suppliers available</MenuItem>}
@@ -263,18 +305,31 @@ const PurchaseReturnList = () => {
                             select fullWidth label="Product"
                             value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)}
                             sx={inputStyles}
+                            disabled={!formData.supplier}
                         >
-                            {products.map(p => <MenuItem key={p._id} value={p._id}>{p.name}</MenuItem>)}
+                            {!formData.supplier && <MenuItem value="" disabled>Select a supplier first</MenuItem>}
+                            {products
+                                .filter(p => {
+                                    const selectedSupplierObj = suppliers.find(s => s._id === formData.supplier);
+                                    return (p.supplier?._id === formData.supplier || p.supplier === formData.supplier) || 
+                                           (selectedSupplierObj && selectedSupplierObj.items && selectedSupplierObj.items.some(itemId => 
+                                               itemId === p._id || (typeof itemId === 'object' && itemId._id === p._id)
+                                           ));
+                                })
+                                .map(p => <MenuItem key={p._id} value={p._id}>{p.name}</MenuItem>)
+                            }
                         </TextField>
                         <TextField 
                             type="number" label="Qty" sx={{ ...inputStyles, width: 100 }}
                             value={qty} onChange={(e) => setQty(e.target.value)}
+                            disabled={!formData.supplier}
                         />
                         <TextField 
                             type="number" label="Refund (LKR)" sx={{ ...inputStyles, width: 140 }}
                             value={refundAmount} onChange={(e) => setRefundAmount(e.target.value)}
+                            disabled={!formData.supplier}
                         />
-                        <Button variant="contained" onClick={addItem} sx={{ height: '53px', bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>Add</Button>
+                        <Button variant="contained" onClick={addItem} disabled={!formData.supplier} sx={{ height: '53px', bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>Add</Button>
                     </Box>
 
                     <Box sx={{ mt: 3, bgcolor: 'rgba(255,255,255,0.02)', p: 2, borderRadius: 2 }}>

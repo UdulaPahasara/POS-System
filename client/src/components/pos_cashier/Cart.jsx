@@ -4,7 +4,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const Cart = ({ cartItems, updateQuantity, removeItem, clearCart, handleCheckout, subtotal, tax, total }) => {
+const Cart = ({ cartItems, updateQuantity, removeItem, clearCart, handleCheckout, subtotal, tax, total, heldCartsCount, onHoldCart, onOpenHeldCarts }) => {
     const getDiscountedPrice = (product) => {
         const price = Number(product.sellingPrice);
         if (!product.discount) return price;
@@ -20,7 +20,14 @@ const Cart = ({ cartItems, updateQuantity, removeItem, clearCart, handleCheckout
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 3 }}>
-            <Typography variant="h6" sx={{ color: '#fff', fontWeight: 700, mb: 2 }}>Current Order</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 700 }}>Current Order</Typography>
+                {heldCartsCount > 0 && (
+                    <Button variant="outlined" size="small" onClick={onOpenHeldCarts} sx={{ color: '#60a5fa', borderColor: 'rgba(96, 165, 250, 0.5)', borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>
+                        Held Carts ({heldCartsCount})
+                    </Button>
+                )}
+            </Box>
             
             {/* Cart Items List */}
             <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
@@ -116,9 +123,18 @@ const Cart = ({ cartItems, updateQuantity, removeItem, clearCart, handleCheckout
                         color="error" 
                         onClick={clearCart}
                         disabled={cartItems.length === 0}
-                        sx={{ flex: '0 0 30%', textTransform: 'none', borderRadius: 2, fontWeight: 600 }}
+                        sx={{ flex: '0 0 25%', textTransform: 'none', borderRadius: 2, fontWeight: 600 }}
                     >
                         Void
+                    </Button>
+                    <Button 
+                        variant="outlined" 
+                        color="warning" 
+                        onClick={onHoldCart}
+                        disabled={cartItems.length === 0}
+                        sx={{ flex: '0 0 25%', textTransform: 'none', borderRadius: 2, fontWeight: 600 }}
+                    >
+                        Hold
                     </Button>
                     <Button 
                         variant="contained" 

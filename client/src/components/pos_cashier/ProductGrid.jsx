@@ -13,9 +13,10 @@ const ProductGrid = ({ products, onAddToCart, customerSelectorNode }) => {
 
     // Filter products
     const filteredProducts = products.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              p.sku.toLowerCase().includes(searchQuery.toLowerCase());
         const catName = getCategoryName(p.category) || 'Unknown';
+        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              catName.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = activeCategory === 'All' || catName === activeCategory;
         return matchesSearch && matchesCategory;
     });
@@ -26,7 +27,7 @@ const ProductGrid = ({ products, onAddToCart, customerSelectorNode }) => {
             <Box sx={{ mb: 3 }}>
                 <TextField
                     fullWidth
-                    placeholder="Search by Product Name, SKU, or Barcode..."
+                    placeholder="Search by Name, SKU, Barcode, or Category..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     InputProps={{
@@ -113,15 +114,15 @@ const ProductGrid = ({ products, onAddToCart, customerSelectorNode }) => {
                                 </Box>
                             )}
                             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                <Typography variant="caption" sx={{ display: 'block', color: product.stock > 0 ? '#10b981' : '#ef4444', fontWeight: 700, mb: 0.5, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.7rem' }}>
+                                    {product.stock > 0 ? `${product.stock} left in stock` : 'Out of Stock'}
+                                </Typography>
                                 <Typography variant="body1" sx={{ color: '#fff', fontWeight: 600, noWrap: true, mb: 0.5 }}>
                                     {product.name}
                                 </Typography>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                     <Typography variant="h6" sx={{ color: '#60a5fa', fontWeight: 700 }}>
                                         LKR {product.sellingPrice.toFixed(2)}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ color: product.stock > 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
-                                        {product.stock > 0 ? `${product.stock} left` : 'Out of Stock'}
                                     </Typography>
                                 </Box>
                             </CardContent>

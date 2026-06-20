@@ -17,6 +17,7 @@ import emailjs from '@emailjs/browser';
 import { useNotifications } from '../../context/NotificationContext';
 import { productsApi } from '../../services/productsApi';
 import { posApi } from '../../services/posApi';
+import { settingsApi } from '../../services/settingsApi';
 
 const POSLayout = () => {
     const navigate = useNavigate();
@@ -40,21 +41,34 @@ const POSLayout = () => {
     // Logout State
     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
+    // Custom Confirm Dialog State
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+    const [confirmDialogConfig, setConfirmDialogConfig] = useState({ title: '', message: '', onConfirm: null });
+
+    // Hold Cart State
+    const [heldCarts, setHeldCarts] = useState([]);
+    const [heldCartsDialogOpen, setHeldCartsDialogOpen] = useState(false);
+
     // Barcode Scanner State
     const [scannerOpen, setScannerOpen] = useState(false);
     const [manualBarcode, setManualBarcode] = useState('');
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+    const [systemSettings, setSystemSettings] = useState(null);
 
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchInitialData = async () => {
             try {
-                const data = await productsApi.getAllProducts();
-                if (data) setProducts(data);
+                const [productsData, settingsData] = await Promise.all([
+                    productsApi.getAllProducts(),
+                    settingsApi.getSettings()
+                ]);
+                if (productsData) setProducts(productsData);
+                if (settingsData) setSystemSettings(settingsData);
             } catch (error) {
-                console.error("Error fetching products:", error);
+                console.error("Error fetching initial data:", error);
             }
         };
-        fetchProducts();
+        fetchInitialData();
     }, []);
 
     const { socket } = useNotifications();
@@ -138,6 +152,58 @@ const POSLayout = () => {
         setCheckoutOpen(true);
     };
 
+    const handleHoldCart = () => {
+        if (cartItems.length === 0) {
+            setSnackbar({ open: true, message: "Cannot hold an empty cart.", severity: 'warning' });
+            return;
+        }
+
+        const newHeldCart = {
+            id: Date.now().toString(),
+            items: [...cartItems],
+            customer: selectedCustomer,
+            timestamp: new Date(),
+            name: selectedCustomer ? `${selectedCustomer.name} (${cartItems.length} items)` : `Guest (${cartItems.length} items)`
+        };
+
+        setHeldCarts(prev => [...prev, newHeldCart]);
+        setCartItems([]);
+        setSelectedCustomer(null);
+    };
+
+    const restoreHeldCart = (heldCart) => {
+        if (cartItems.length > 0) {
+            setConfirmDialogConfig({
+                title: 'Restore Held Cart',
+                message: 'Restoring this cart will completely void your current active cart. Do you wish to continue?',
+                onConfirm: () => {
+                    setCartItems(heldCart.items);
+                    setSelectedCustomer(heldCart.customer);
+                    setHeldCarts(prev => prev.filter(c => c.id !== heldCart.id));
+                    setHeldCartsDialogOpen(false);
+                }
+            });
+            setConfirmDialogOpen(true);
+            return;
+        }
+        
+        setCartItems(heldCart.items);
+        setSelectedCustomer(heldCart.customer);
+        setHeldCarts(prev => prev.filter(c => c.id !== heldCart.id));
+        setHeldCartsDialogOpen(false);
+    };
+
+    const deleteHeldCart = (id) => {
+        setConfirmDialogConfig({
+            title: 'Delete Held Cart',
+            message: 'Are you sure you want to permanently delete this held cart?',
+            onConfirm: () => {
+                setHeldCarts(prev => prev.filter(c => c.id !== id));
+            }
+        });
+        setConfirmDialogOpen(true);
+    };
+
     const handleLogoutClick = () => {
         setLogoutDialogOpen(true);
     };
@@ -175,10 +241,7 @@ const POSLayout = () => {
         );
 
         if (product) {
-            const added = addToCart(product);
-            if (added) {
-                setSnackbar({ open: true, message: `Added ${product.name} to cart.`, severity: 'success' });
-            }
+            addToCart(product);
             setManualBarcode(''); // clear input if it was manual
         } else {
             setSnackbar({ open: true, message: `Product not found for barcode: ${barcode}`, severity: 'error' });
@@ -193,8 +256,11 @@ const POSLayout = () => {
 
     const subtotal = cartItems.reduce((sum, item) => sum + (getDiscountedPrice(item.product) * item.quantity), 0);
     const tax = cartItems.reduce((sum, item) => {
-        const itemTaxRate = item.product.category && item.product.category.taxRate ? item.product.category.taxRate / 100 : 0;
-        return sum + (getDiscountedPrice(item.product) * item.quantity * itemTaxRate);
+        let itemTaxRate = item.product.category && item.product.category.taxRate ? item.product.category.taxRate : 0;
+        if (itemTaxRate === 0 && systemSettings?.defaultTaxRate) {
+            itemTaxRate = systemSettings.defaultTaxRate;
+        }
+        return sum + (getDiscountedPrice(item.product) * item.quantity * (itemTaxRate / 100));
     }, 0);
     const total = subtotal + tax;
 
@@ -265,12 +331,7 @@ const POSLayout = () => {
                 <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
                     <ProductGrid 
                         products={products} 
-                        onAddToCart={(prod) => {
-                            const added = addToCart(prod);
-                            if (added) {
-                                setSnackbar({ open: true, message: `Added ${prod.name} to cart.`, severity: 'success' });
-                            }
-                        }} 
+                        onAddToCart={(prod) => addToCart(prod)} 
                         customerSelectorNode={
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'rgba(59, 130, 246, 0.05)', p: 1.5, borderRadius: 3, border: '1px solid rgba(59, 130, 246, 0.2)' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -315,6 +376,9 @@ const POSLayout = () => {
                     subtotal={subtotal}
                     tax={tax}
                     total={total}
+                    heldCartsCount={heldCarts.length}
+                    onHoldCart={handleHoldCart}
+                    onOpenHeldCarts={() => setHeldCartsDialogOpen(true)}
                 />
             </Box>
 
@@ -441,29 +505,91 @@ const POSLayout = () => {
                 </Alert>
             </Snackbar>
 
+            {/* Held Carts Dialog */}
+            <Dialog
+                open={heldCartsDialogOpen}
+                onClose={() => setHeldCartsDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                    sx: { bgcolor: '#1e293b', color: '#fff', borderRadius: 2, border: '1px solid rgba(255,255,255,0.1)' }
+                }}
+            >
+                <DialogTitle sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 600 }}>Held Carts</DialogTitle>
+                <DialogContent sx={{ pt: 3, pb: 3, minHeight: '200px' }}>
+                    {heldCarts.length === 0 ? (
+                        <Typography sx={{ color: '#94a3b8', textAlign: 'center', mt: 4 }}>No held carts available.</Typography>
+                    ) : (
+                        heldCarts.map(cart => (
+                            <Box key={cart.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, mb: 1, bgcolor: 'rgba(255,255,255,0.02)', borderRadius: 2, border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <Box>
+                                    <Typography sx={{ color: '#fff', fontWeight: 600 }}>{cart.name}</Typography>
+                                    <Typography variant="caption" sx={{ color: '#94a3b8' }}>{new Date(cart.timestamp).toLocaleTimeString()} - Total: LKR {cart.items.reduce((sum, item) => sum + (getDiscountedPrice(item.product) * item.quantity), 0).toFixed(2)}</Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Button size="small" variant="outlined" color="info" onClick={() => restoreHeldCart(cart)} sx={{ textTransform: 'none' }}>Restore</Button>
+                                    <Button size="small" variant="outlined" color="error" onClick={() => deleteHeldCart(cart.id)} sx={{ textTransform: 'none' }}>Delete</Button>
+                                </Box>
+                            </Box>
+                        ))
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <Button onClick={() => setHeldCartsDialogOpen(false)} sx={{ color: '#94a3b8' }}>Close</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Custom Action Confirmation Dialog */}
+            <Dialog
+                open={confirmDialogOpen}
+                onClose={() => setConfirmDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+                PaperProps={{
+                    sx: { bgcolor: '#ffffff', color: '#0f172a', borderRadius: 3, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 700, fontSize: '1.2rem', pb: 1 }}>{confirmDialogConfig.title}</DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ color: '#475569', fontSize: '1rem', lineHeight: 1.5 }}>{confirmDialogConfig.message}</Typography>
+                </DialogContent>
+                <DialogActions sx={{ p: 2.5, pt: 1 }}>
+                    <Button onClick={() => setConfirmDialogOpen(false)} sx={{ color: '#64748b', textTransform: 'none', fontWeight: 600, mr: 1 }}>Cancel</Button>
+                    <Button 
+                        variant="contained" 
+                        color="error" 
+                        onClick={() => {
+                            if (confirmDialogConfig.onConfirm) confirmDialogConfig.onConfirm();
+                            setConfirmDialogOpen(false);
+                        }} 
+                        sx={{ textTransform: 'none', fontWeight: 600, px: 3, borderRadius: 2 }}
+                    >
+                        Confirm
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
             {/* Logout Confirmation Dialog */}
             <Dialog
                 open={logoutDialogOpen}
                 onClose={() => setLogoutDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
                 PaperProps={{
-                    sx: {
-                        bgcolor: '#1e293b',
-                        color: '#fff',
-                        borderRadius: 2
-                    }
+                    sx: { bgcolor: '#ffffff', color: '#0f172a', borderRadius: 3, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }
                 }}
             >
-                <DialogTitle>Confirm Logout</DialogTitle>
+                <DialogTitle sx={{ fontWeight: 700, fontSize: '1.2rem', pb: 1 }}>Confirm Logout</DialogTitle>
                 <DialogContent>
-                    <DialogContentText sx={{ color: '#94a3b8' }}>
-                        Are you sure you want to logout?
-                    </DialogContentText>
+                    <Typography sx={{ color: '#475569', fontSize: '1rem', lineHeight: 1.5 }}>
+                        Are you sure you want to securely logout from the POS system?
+                    </Typography>
                 </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setLogoutDialogOpen(false)} sx={{ color: '#94a3b8' }}>
+                <DialogActions sx={{ p: 2.5, pt: 1 }}>
+                    <Button onClick={() => setLogoutDialogOpen(false)} sx={{ color: '#64748b', textTransform: 'none', fontWeight: 600, mr: 1 }}>
                         Cancel
                     </Button>
-                    <Button onClick={handleLogoutConfirm} variant="contained" color="error" sx={{ borderRadius: 2 }}>
+                    <Button onClick={handleLogoutConfirm} variant="contained" color="error" sx={{ textTransform: 'none', fontWeight: 600, px: 3, borderRadius: 2 }}>
                         Logout
                     </Button>
                 </DialogActions>
