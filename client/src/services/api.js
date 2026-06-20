@@ -5,6 +5,17 @@ const BASE_URL = 'http://localhost:5000/api';
  * Automatically adds the Authorization token and handles JSON parsing.
  */
 const apiFetch = async (endpoint, options = {}) => {
+    let url = `${BASE_URL}${endpoint}`;
+    
+    // Support for Axios-style params object
+    if (options.params) {
+        const queryParams = new URLSearchParams(options.params).toString();
+        if (queryParams) {
+            url += (url.includes('?') ? '&' : '?') + queryParams;
+        }
+        delete options.params;
+    }
+
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     
     const headers = {
@@ -27,7 +38,7 @@ const apiFetch = async (endpoint, options = {}) => {
     }
 
     try {
-        const response = await fetch(`${BASE_URL}${endpoint}`, config);
+        const response = await fetch(url, config);
         
         // Handle 204 No Content
         if (response.status === 204) {

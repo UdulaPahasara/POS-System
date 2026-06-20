@@ -47,7 +47,7 @@ const ReportLayout = () => {
                     }}
                 >
                     <Tab label="Sales" />
-                    <Tab label="Financials" />
+                    <Tab label="Financial" />
                     <Tab label="Products" />
                     <Tab label="Customers" />
                     <Tab label="Inventory" />
