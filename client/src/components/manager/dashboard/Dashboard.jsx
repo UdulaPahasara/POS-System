@@ -179,7 +179,7 @@ const Dashboard = () => {
                     icon={<StarIcon fontSize="large" />} 
                     color="#ec4899" 
                     subtitleColor="#ec4899"
-                    onClick={() => navigate(`/${userRole === 'Admin' ? 'admin' : 'manager'}/reports`)}
+                    onClick={() => navigate(`/${userRole === 'Admin' ? 'admin' : 'manager'}/reports`, { state: { tabIndex: 2 } })}
                 />
                 
                 <SummaryCard delay={0.4} title="Items in Stock" value={(stats?.itemsInStock || 0).toLocaleString()} subtitle="Total quantity across all products" icon={<StockIcon fontSize="large" />} color="#8b5cf6" subtitleColor="#94a3b8" />

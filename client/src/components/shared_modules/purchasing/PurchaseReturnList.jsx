@@ -232,7 +232,14 @@ const PurchaseReturnList = () => {
                 )}
             </Box>
 
-            <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', borderRadius: 2 }}>
+            <TableContainer component={Paper} sx={{ 
+                bgcolor: '#1e293b', borderRadius: 2,
+                animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
+                '@keyframes slideUp': {
+                    '0%': { opacity: 0, transform: 'translateY(30px)' },
+                    '100%': { opacity: 1, transform: 'translateY(0)' }
+                }
+            }}>
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -260,9 +267,15 @@ const PurchaseReturnList = () => {
                                     key={pr._id} 
                                     id={`pr-row-${pr._id}`}
                                     sx={{ 
-                                        '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
+                                        '&:hover': { 
+                                            bgcolor: 'rgba(255, 255, 255, 0.04)',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 8px 25px -5px rgba(0,0,0,0.5)',
+                                            zIndex: 10,
+                                            position: 'relative'
+                                        },
                                         bgcolor: highlightedPrId === pr._id ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                                        transition: 'background-color 0.5s ease'
+                                        transition: 'all 0.2s ease-in-out'
                                     }}
                                 >
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{pr.prNumber}</TableCell>

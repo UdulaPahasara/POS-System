@@ -29,7 +29,14 @@ const FinancialReports = () => {
             <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600, mb: 3 }}>Financial Overview</Typography>
             <Grid container spacing={3}>
                 <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Paper sx={{ 
+                        p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2,
+                        animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
+                        '@keyframes slideUp': {
+                            '0%': { opacity: 0, transform: 'translateY(30px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' }
+                        }
+                    }}>
                         <Box sx={{ p: 1.5, bgcolor: 'rgba(59, 130, 246, 0.1)', borderRadius: 2 }}>
                             <MoneyIcon sx={{ color: '#3b82f6', fontSize: 32 }} />
                         </Box>
@@ -40,7 +47,14 @@ const FinancialReports = () => {
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Paper sx={{ 
+                        p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2,
+                        animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both`,
+                        '@keyframes slideUp': {
+                            '0%': { opacity: 0, transform: 'translateY(30px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' }
+                        }
+                    }}>
                         <Box sx={{ p: 1.5, bgcolor: 'rgba(245, 158, 11, 0.1)', borderRadius: 2 }}>
                             <WalletIcon sx={{ color: '#f59e0b', fontSize: 32 }} />
                         </Box>
@@ -51,7 +65,14 @@ const FinancialReports = () => {
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Paper sx={{ 
+                        p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2,
+                        animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both`,
+                        '@keyframes slideUp': {
+                            '0%': { opacity: 0, transform: 'translateY(30px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' }
+                        }
+                    }}>
                         <Box sx={{ p: 1.5, bgcolor: 'rgba(16, 185, 129, 0.1)', borderRadius: 2 }}>
                             <TrendingUpIcon sx={{ color: '#10b981', fontSize: 32 }} />
                         </Box>

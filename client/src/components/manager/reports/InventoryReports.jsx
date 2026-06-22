@@ -29,25 +29,53 @@ const InventoryReports = () => {
             <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600, mb: 3 }}>Inventory Overview</Typography>
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12} md={3}>
-                    <Paper sx={{ p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2 }}>
+                    <Paper sx={{ 
+                        p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2,
+                        animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
+                        '@keyframes slideUp': {
+                            '0%': { opacity: 0, transform: 'translateY(30px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' }
+                        }
+                    }}>
                         <Typography variant="body2" sx={{ color: '#94a3b8' }}>Total Stock Value</Typography>
                         <Typography variant="h5" sx={{ color: '#8b5cf6', fontWeight: 700 }}>LKR {data.totalStockValue?.toFixed(2)}</Typography>
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <Paper sx={{ p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2 }}>
+                    <Paper sx={{ 
+                        p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2,
+                        animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both`,
+                        '@keyframes slideUp': {
+                            '0%': { opacity: 0, transform: 'translateY(30px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' }
+                        }
+                    }}>
                         <Typography variant="body2" sx={{ color: '#94a3b8' }}>Total Products</Typography>
                         <Typography variant="h5" sx={{ color: '#fff', fontWeight: 700 }}>{data.totalProducts}</Typography>
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <Paper sx={{ p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2 }}>
+                    <Paper sx={{ 
+                        p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2,
+                        animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both`,
+                        '@keyframes slideUp': {
+                            '0%': { opacity: 0, transform: 'translateY(30px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' }
+                        }
+                    }}>
                         <Typography variant="body2" sx={{ color: '#94a3b8' }}>Low Stock Items</Typography>
                         <Typography variant="h5" sx={{ color: '#ef4444', fontWeight: 700 }}>{data.lowStockCount}</Typography>
                     </Paper>
                 </Grid>
                 <Grid item xs={12} md={3}>
-                    <Paper sx={{ p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2 }}>
+                    <Paper sx={{ 
+                        p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2,
+                        animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.4s both`,
+                        '@keyframes slideUp': {
+                            '0%': { opacity: 0, transform: 'translateY(30px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' }
+                        }
+                    }}>
                         <Typography variant="body2" sx={{ color: '#94a3b8' }}>Out of Stock</Typography>
                         <Typography variant="h5" sx={{ color: '#f59e0b', fontWeight: 700 }}>{data.outOfStockCount}</Typography>
                     </Paper>
@@ -60,7 +88,14 @@ const InventoryReports = () => {
                         <WarningIcon sx={{ color: '#ef4444' }} />
                         <Typography variant="h6" sx={{ color: '#ef4444', fontWeight: 600 }}>Low Stock Alerts</Typography>
                     </Box>
-                    <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <TableContainer component={Paper} sx={{ 
+                        bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)',
+                        animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both`,
+                        '@keyframes slideUp': {
+                            '0%': { opacity: 0, transform: 'translateY(30px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' }
+                        }
+                    }}>
                         <Table>
                             <TableHead>
                                 <TableRow>

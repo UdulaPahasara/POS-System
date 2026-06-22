@@ -30,7 +30,14 @@ const CustomerReports = () => {
                 <AccountIcon sx={{ color: '#3b82f6', fontSize: 32 }} />
                 <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>Top Customers (By Revenue)</Typography>
             </Box>
-            <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <TableContainer component={Paper} sx={{ 
+                bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)',
+                animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
+                '@keyframes slideUp': {
+                    '0%': { opacity: 0, transform: 'translateY(30px)' },
+                    '100%': { opacity: 1, transform: 'translateY(0)' }
+                }
+            }}>
                 <Table>
                     <TableHead>
                         <TableRow>

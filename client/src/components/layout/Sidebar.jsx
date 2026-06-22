@@ -12,12 +12,14 @@ import {
     LocalOffer as CategoryIcon,
     Assessment as AssessmentIcon,
     Business as SupplierIcon,
-    AssignmentReturn as ReturnIcon
+    AssignmentReturn as ReturnIcon,
+    Description as InvoiceIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const rawNavItems = [
     { title: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', roles: ['Admin', 'Manager'] },
+    { title: 'Invoices', icon: <InvoiceIcon />, path: '/invoices', roles: ['Admin', 'Manager'] },
     { title: 'Inventory Dashboard', icon: <DashboardIcon />, path: '/inventory-dashboard', roles: ['Inventory Staff'] },
     { title: 'Categories', icon: <CategoryIcon />, path: '/categories', roles: ['Admin'] },
     { title: 'Products', icon: <ProductIcon/>, path: '/products', roles: ['Admin'] },

@@ -95,7 +95,14 @@ const SalesReports = () => {
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
             ) : (
-                <Paper sx={{ p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2 }}>
+                <Paper sx={{ 
+                    p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2,
+                    animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
+                    '@keyframes slideUp': {
+                        '0%': { opacity: 0, transform: 'translateY(30px)' },
+                        '100%': { opacity: 1, transform: 'translateY(0)' }
+                    }
+                }}>
                     {data.length > 0 ? (
                         <Bar data={chartData} options={options} />
                     ) : (

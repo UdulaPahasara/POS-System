@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Box, Typography, Tabs, Tab, Paper } from '@mui/material';
 import { Print as PrintIcon } from '@mui/icons-material';
 
@@ -9,7 +10,16 @@ import ProductReports from './ProductReports';
 import CustomerReports from './CustomerReports';
 
 const ReportLayout = () => {
-    const [tabIndex, setTabIndex] = useState(0);
+    const location = useLocation();
+    const [tabIndex, setTabIndex] = useState(location.state?.tabIndex !== undefined ? location.state.tabIndex : 0);
+
+    useEffect(() => {
+        if (location.state?.tabIndex !== undefined) {
+            setTabIndex(location.state.tabIndex);
+            // Clear the state so it doesn't get stuck if they refresh
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state?.tabIndex]);
 
     const handleTabChange = (event, newValue) => {
         setTabIndex(newValue);

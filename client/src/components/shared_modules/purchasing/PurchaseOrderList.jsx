@@ -229,7 +229,7 @@ const PurchaseOrderList = () => {
                         ⚠️ Low Stock Suggestions (Needs Reordering)
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 1, '&::-webkit-scrollbar': { height: 6, bgcolor: 'rgba(255,255,255,0.05)' }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(245, 158, 11, 0.5)', borderRadius: 3 } }}>
-                        {products.filter(p => p.stock <= p.reorderLevel).map(p => (
+                        {products.filter(p => p.stock <= p.reorderLevel).map((p, index) => (
                             <Paper 
                                 key={p._id}
                                 sx={{ 
@@ -238,7 +238,12 @@ const PurchaseOrderList = () => {
                                     bgcolor: 'rgba(245, 158, 11, 0.05)', 
                                     border: '1px solid rgba(245, 158, 11, 0.3)',
                                     borderRadius: 3,
-                                    flexShrink: 0
+                                    flexShrink: 0,
+                                    animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${0.1 + (index * 0.1)}s both`,
+                                    '@keyframes slideUp': {
+                                        '0%': { opacity: 0, transform: 'translateY(30px)' },
+                                        '100%': { opacity: 1, transform: 'translateY(0)' }
+                                    }
                                 }}
                             >
                                 <Typography variant="body1" sx={{ color: '#fff', fontWeight: 600, mb: 0.5 }} noWrap>{p.name}</Typography>
@@ -270,7 +275,14 @@ const PurchaseOrderList = () => {
                 </Box>
             )}
 
-            <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', overflowX: 'hidden' }}>
+            <TableContainer component={Paper} sx={{ 
+                bgcolor: '#1e293b', overflowX: 'hidden',
+                animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both`,
+                '@keyframes slideUp': {
+                    '0%': { opacity: 0, transform: 'translateY(30px)' },
+                    '100%': { opacity: 1, transform: 'translateY(0)' }
+                }
+            }}>
                 <Table>
                     <TableHead>
                         <TableRow>

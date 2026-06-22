@@ -20,6 +20,7 @@ import purchaseReturnRoutes from './routes/purchaseReturnRoutes.js';
 import supplierRoutes from './routes/supplierRoutes.js';
 import settingRoutes from './routes/settingRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import invoiceRoutes from './routes/invoiceRoutes.js';
 import Role from './model/Role.js';
 import Permission from './model/Permission.js';
 import path from 'path';
@@ -65,6 +66,7 @@ app.use('/api/purchase-returns', purchaseReturnRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/invoices', invoiceRoutes);
 
 // Add a basic route to test server status
 app.get('/', (req, res) => {

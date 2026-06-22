@@ -16,6 +16,7 @@ import InventoryDashboard from './components/inventory_staff/dashboard/Inventory
 import PurchaseOrderList from './components/shared_modules/purchasing/PurchaseOrderList';
 import PurchaseReturnList from './components/shared_modules/purchasing/PurchaseReturnList';
 import SupplierList from './components/manager/suppliers/SupplierList';
+import InvoiceList from './components/manager/invoices/InvoiceList';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import UserProfile from './components/common/UserProfile';
 import './App.css';
@@ -63,6 +64,10 @@ function App() {
                         <Route path="customers" element={<CustomerList />} />
                     </Route>
                     <Route path="reports" element={<ReportLayout />} />
+                    
+                    <Route element={<ProtectedRoute allowedRoles={['Admin', 'Manager']} />}>
+                        <Route path="invoices" element={<InvoiceList />} />
+                    </Route>
                     
                     <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
                         <Route path="employees" element={<UserList />} />

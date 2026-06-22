@@ -28,7 +28,14 @@ const ProductReports = () => {
             <Grid container spacing={4}>
                 <Grid item xs={12} md={6}>
                     <Typography variant="h6" sx={{ color: '#10b981', fontWeight: 600, mb: 2 }}>Top Selling Products</Typography>
-                    <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <TableContainer component={Paper} sx={{ 
+                        bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)',
+                        animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
+                        '@keyframes slideUp': {
+                            '0%': { opacity: 0, transform: 'translateY(30px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' }
+                        }
+                    }}>
                         <Table size="small">
                             <TableHead>
                                 <TableRow>
@@ -51,7 +58,14 @@ const ProductReports = () => {
                 </Grid>
                 <Grid item xs={12} md={6}>
                     <Typography variant="h6" sx={{ color: '#ef4444', fontWeight: 600, mb: 2 }}>Slow Moving Products</Typography>
-                    <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <TableContainer component={Paper} sx={{ 
+                        bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)',
+                        animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both`,
+                        '@keyframes slideUp': {
+                            '0%': { opacity: 0, transform: 'translateY(30px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' }
+                        }
+                    }}>
                         <Table size="small">
                             <TableHead>
                                 <TableRow>
