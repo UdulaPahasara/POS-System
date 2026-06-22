@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Grid, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Chip } from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import {
@@ -16,7 +17,9 @@ import {
     AttachMoney as RevenueIcon, 
     ShoppingCart as SalesIcon, 
     TrendingUp as ProfitIcon,
-    Inventory as StockIcon
+    Inventory as StockIcon,
+    Star as StarIcon,
+    WarningAmber as WarningIcon
 } from '@mui/icons-material';
 import { useNotifications } from '../../../context/NotificationContext';
 import { reportsApi } from '../../../services/reportsApi';
@@ -24,8 +27,9 @@ import { reportsApi } from '../../../services/reportsApi';
 // Register ChartJS modules
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-const SummaryCard = ({ title, value, subtitle, icon, color }) => (
+const SummaryCard = ({ title, value, subtitle, icon, color, subtitleColor = '#10b981', onClick, delay = 0 }) => (
     <Paper 
+        onClick={onClick}
         sx={{ 
             p: 3, 
             borderRadius: 4, 
@@ -36,13 +40,22 @@ const SummaryCard = ({ title, value, subtitle, icon, color }) => (
             justifyContent: 'space-between',
             gap: 2,
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            cursor: onClick ? 'pointer' : 'default',
+            height: '100%',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            '&:hover': onClick ? { transform: 'translateY(-4px)', boxShadow: `0 8px 24px ${color}40` } : {},
+            animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s both`,
+            '@keyframes slideUp': {
+                '0%': { opacity: 0, transform: 'translateY(30px)' },
+                '100%': { opacity: 1, transform: 'translateY(0)' }
+            }
         }}
     >
         <Box sx={{ position: 'relative', zIndex: 1, minWidth: 0, flex: 1, pr: 1 }}>
             <Typography variant="body2" noWrap sx={{ color: '#94a3b8', mb: 1, fontWeight: 500 }}>{title}</Typography>
             <Typography variant="h4" sx={{ color: '#fff', fontWeight: 700, mb: 0.5, fontSize: { xs: '1.5rem', lg: '2rem' }, wordBreak: 'break-word' }}>{value}</Typography>
-            <Typography variant="caption" sx={{ color: '#10b981', fontWeight: 600, display: 'block' }}>{subtitle}</Typography>
+            <Typography variant="caption" sx={{ color: subtitleColor, fontWeight: 600, display: 'block' }}>{subtitle}</Typography>
         </Box>
         <Box 
             sx={{ 
@@ -62,6 +75,7 @@ const SummaryCard = ({ title, value, subtitle, icon, color }) => (
 );
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -139,24 +153,39 @@ const Dashboard = () => {
             </Box>
 
             {/* Summary Cards */}
-            <Grid container spacing={3} sx={{ mb: 4, justifyContent: 'center' }}>
-                <Grid item xs={11} sm={5} md={3}>
-                    <SummaryCard title="Today's Sales" value={`Rs.${stats?.todayRevenue?.toLocaleString() || 0}`} subtitle="Calculated from today's sales" icon={<SalesIcon fontSize="large" />} color="#3b82f6" />
-                </Grid>
+            <Box 
+                sx={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, 
+                    gap: 3, 
+                    mb: 4 
+                }}
+            >
+                <SummaryCard delay={0} title="Today's Sales" value={`Rs.${stats?.todayRevenue?.toLocaleString() || 0}`} subtitle="Calculated from today's sales" icon={<SalesIcon fontSize="large" />} color="#3b82f6" subtitleColor="#3b82f6" />
+                
                 {userRole === 'Admin' && (
-                    <Grid item xs={11} sm={5} md={3}>
-                        <SummaryCard title="Monthly Revenue" value={`Rs.${stats?.monthlyRevenue?.toLocaleString() || 0}`} subtitle="Total revenue for this month" icon={<RevenueIcon fontSize="large" />} color="#10b981" />
-                    </Grid>
+                    <SummaryCard delay={0.1} title="Monthly Revenue" value={`Rs.${stats?.monthlyRevenue?.toLocaleString() || 0}`} subtitle="Total revenue for this month" icon={<RevenueIcon fontSize="large" />} color="#10b981" subtitleColor="#10b981" />
                 )}
+                
                 {userRole === 'Admin' && (
-                    <Grid item xs={11} sm={5} md={3}>
-                        <SummaryCard title="Total Profit" value={`Rs.${stats?.totalProfit?.toLocaleString() || 0}`} subtitle="Gross profit this month" icon={<ProfitIcon fontSize="large" />} color="#f59e0b" />
-                    </Grid>
+                    <SummaryCard delay={0.2} title="Total Profit" value={`Rs.${stats?.totalProfit?.toLocaleString() || 0}`} subtitle="Gross profit this month" icon={<ProfitIcon fontSize="large" />} color="#f59e0b" subtitleColor="#f59e0b" />
                 )}
-                <Grid item xs={11} sm={5} md={3}>
-                    <SummaryCard title="Items in Stock" value={(stats?.itemsInStock || 0).toLocaleString()} subtitle={`${stats?.lowStockItems?.length || 0} items running low`} icon={<StockIcon fontSize="large" />} color="#8b5cf6" />
-                </Grid>
-            </Grid>
+                
+                <SummaryCard 
+                    delay={0.3}
+                    title="Top Selling Product" 
+                    value={stats?.topSellingProduct?.name || 'N/A'} 
+                    subtitle={`${stats?.topSellingProduct?.quantity || 0} units sold this month`} 
+                    icon={<StarIcon fontSize="large" />} 
+                    color="#ec4899" 
+                    subtitleColor="#ec4899"
+                    onClick={() => navigate(`/${userRole === 'Admin' ? 'admin' : 'manager'}/reports`)}
+                />
+                
+                <SummaryCard delay={0.4} title="Items in Stock" value={(stats?.itemsInStock || 0).toLocaleString()} subtitle="Total quantity across all products" icon={<StockIcon fontSize="large" />} color="#8b5cf6" subtitleColor="#94a3b8" />
+                
+                <SummaryCard delay={0.5} title="Low Stock Alerts" value={stats?.lowStockItems?.length || 0} subtitle="Items reached reorder level" icon={<WarningIcon fontSize="large" />} color="#ef4444" subtitleColor="#ef4444" />
+            </Box>
 
             {/* Main Chart - Admin Only */}
             {userRole === 'Admin' && (

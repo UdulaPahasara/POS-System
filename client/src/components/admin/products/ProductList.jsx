@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { 
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, IconButton, Button,
-    Chip, InputAdornment, TextField, Avatar,
+    Chip, InputAdornment, TextField, Avatar, Grid,
     Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
     Snackbar, Alert
 } from '@mui/material';
@@ -14,10 +14,12 @@ import {
     Search as SearchIcon,
     Inventory2 as InventoryIcon,
     BarcodeReader as BarcodeIcon,
-    Print as PrintIcon
+    Print as PrintIcon,
+    QrCodeScanner as ScannerIcon
 } from '@mui/icons-material';
 import ProductDialog from './ProductDialog';
 import Barcode from 'react-barcode';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useNotifications } from '../../../context/NotificationContext';
 import { productsApi } from '../../../services/productsApi';
 import { categoriesApi } from '../../../services/categoriesApi';
@@ -39,6 +41,10 @@ const ProductList = () => {
     // States for Barcode Dialog
     const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
     const [selectedBarcodeProduct, setSelectedBarcodeProduct] = useState(null);
+
+    // States for Barcode Scanner
+    const [barcodeSearchQuery, setBarcodeSearchQuery] = useState('');
+    const [scannerDialogOpen, setScannerDialogOpen] = useState(false);
 
     const defaultForm = {
         name: '', sku: '', barcodeValue: '', brand: '', category: '',
@@ -211,7 +217,52 @@ const ProductList = () => {
         setSnackbar(prev => ({ ...prev, open: false }));
     };
 
+    useEffect(() => {
+        let html5QrcodeScanner = null;
+        let timeoutId;
+        
+        if (scannerDialogOpen) {
+            // Wait for MUI Dialog transition to insert element into DOM
+            timeoutId = setTimeout(() => {
+                const element = document.getElementById("reader");
+                if (element) {
+                    html5QrcodeScanner = new Html5QrcodeScanner(
+                        "reader",
+                        { 
+                            fps: 10, 
+                            qrbox: { width: 350, height: 150 }, // Rectangular box for 1D Barcodes
+                            aspectRatio: 1.777778
+                        },
+                        /* verbose= */ false
+                    );
+                    html5QrcodeScanner.render(
+                        (decodedText) => {
+                            setBarcodeSearchQuery(decodedText);
+                            setScannerDialogOpen(false);
+                        },
+                        (errorMessage) => {
+                            // ignore generic parse errors while scanning
+                        }
+                    );
+                } else {
+                    console.error("Scanner element not found");
+                }
+            }, 100);
+        }
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().catch(error => {
+                    console.error("Failed to clear html5QrcodeScanner. ", error);
+                });
+            }
+        };
+    }, [scannerDialogOpen]);
+
     const filteredProducts = products.filter(p => {
+        if (barcodeSearchQuery) {
+            return p.barcodeValue === barcodeSearchQuery || p.sku === barcodeSearchQuery;
+        }
         const catName = typeof p.category === 'object' ? (p.category?.name || '') : (p.category || '');
         return p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -242,26 +293,77 @@ const ProductList = () => {
             </Box>
 
             <Paper sx={{ p: 2, bgcolor: '#1e293b', borderRadius: 2, mb: 3 }}>
-                <TextField
-                    fullWidth
-                    placeholder="Search by product name, SKU, or Category..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon sx={{ color: '#94a3b8' }} />
-                            </InputAdornment>
-                        ),
-                    }}
-                    sx={{
-                        '& .MuiOutlinedInput-root': {
-                            color: '#fff',
-                            bgcolor: 'rgba(255,255,255,0.05)',
-                            '& fieldset': { border: 'none' }
-                        }
-                    }}
-                />
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '7fr 3fr' }, gap: 2 }}>
+                    <TextField
+                        fullWidth
+                        placeholder="Search by product name, SKU, or Category..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: '#94a3b8' }} />
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                color: '#fff',
+                                bgcolor: 'rgba(255,255,255,0.05)',
+                                '& fieldset': { border: 'none' }
+                            }
+                        }}
+                    />
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <TextField
+                            fullWidth
+                            placeholder="Barcode Search..."
+                            value={barcodeSearchQuery}
+                            onChange={(e) => setBarcodeSearchQuery(e.target.value)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <BarcodeIcon sx={{ color: '#94a3b8' }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: barcodeSearchQuery ? (
+                                    <InputAdornment position="end">
+                                        <Button 
+                                            size="small" 
+                                            onClick={() => setBarcodeSearchQuery('')}
+                                            sx={{ minWidth: 'auto', p: 0.5, color: '#ef4444' }}
+                                        >
+                                            Clear
+                                        </Button>
+                                    </InputAdornment>
+                                ) : null
+                            }}
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    color: '#fff',
+                                    bgcolor: 'rgba(255,255,255,0.05)',
+                                    '& fieldset': { border: 'none' }
+                                }
+                            }}
+                        />
+                        <Button 
+                            variant="contained" 
+                            onClick={() => setScannerDialogOpen(true)}
+                            sx={{ 
+                                bgcolor: '#3b82f6', 
+                                '&:hover': { bgcolor: '#2563eb' },
+                                whiteSpace: 'nowrap',
+                                px: 3,
+                                borderRadius: 1.5,
+                                textTransform: 'none',
+                                fontWeight: 600
+                            }}
+                            startIcon={<ScannerIcon />}
+                        >
+                            Scan
+                        </Button>
+                    </Box>
+                </Box>
             </Paper>
 
             <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', borderRadius: 2 }}>
@@ -421,6 +523,30 @@ const ProductList = () => {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
+
+            {/* Webcam Scanner Dialog */}
+            <Dialog
+                open={scannerDialogOpen}
+                onClose={() => setScannerDialogOpen(false)}
+                sx={{
+                    '& .MuiDialog-paper': {
+                        bgcolor: '#1e293b',
+                        color: '#fff',
+                        borderRadius: 3,
+                        minWidth: { xs: '90%', sm: '500px' },
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                    }
+                }}
+            >
+                <DialogTitle sx={{ fontWeight: 600 }}>Scan Product Barcode</DialogTitle>
+                <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Box id="reader" sx={{ width: '100%', maxWidth: '400px', mt: 2 }}></Box>
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={() => setScannerDialogOpen(false)} sx={{ color: '#94a3b8', textTransform: 'none', fontWeight: 600 }}>Cancel</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

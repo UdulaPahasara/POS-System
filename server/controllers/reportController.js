@@ -101,6 +101,25 @@ export const getDashboardStats = async (req, res) => {
             reorder: p.reorderLevel
         }));
 
+        // 8. Top Selling Product (This Month)
+        const topSellingAgg = await Sale.aggregate([
+            { $match: { createdAt: { $gte: startOfMonth } } },
+            { $unwind: "$items" },
+            {
+                $group: {
+                    _id: "$items.product",
+                    name: { $first: "$items.name" },
+                    totalQuantity: { $sum: "$items.quantity" }
+                }
+            },
+            { $sort: { totalQuantity: -1 } },
+            { $limit: 1 }
+        ]);
+        
+        const topSellingProduct = topSellingAgg.length > 0 
+            ? { name: topSellingAgg[0].name, quantity: topSellingAgg[0].totalQuantity } 
+            : { name: 'N/A', quantity: 0 };
+
         res.json({
             todayRevenue,
             monthlyRevenue,
@@ -111,7 +130,8 @@ export const getDashboardStats = async (req, res) => {
                 data: chartData
             },
             recentTransactions,
-            lowStockItems
+            lowStockItems,
+            topSellingProduct
         });
 
     } catch (error) {
