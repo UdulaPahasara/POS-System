@@ -33,6 +33,10 @@ const notificationSchema = new mongoose.Schema({
     actorRole: {
         type: String
     },
+    actor: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
     isRead: {
         type: Boolean,
         default: false

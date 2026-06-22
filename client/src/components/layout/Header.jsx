@@ -70,15 +70,15 @@ const AdminHeader = ({ handleDrawerToggle }) => {
         if (!notif.isRead) markAsRead(notif._id);
         handleCloseNotifications();
         
-        if (notif.relatedModel === 'Product' && notif.link) {
+        if (isAdmin) {
+            // Admins just see the message box, no direct navigation
+            setSelectedNotification(notif);
+        } else if (notif.relatedModel === 'Product' && notif.link) {
             navigate(notif.link, { state: { highlightProductId: notif.relatedId } });
         } else if (notif.relatedModel === 'PurchaseOrder' && notif.link) {
             navigate(notif.link, { state: { highlightPoId: notif.relatedId } });
         } else if (notif.relatedModel === 'PurchaseReturn' && notif.link) {
             navigate(notif.link, { state: { highlightPrId: notif.relatedId } });
-        } else if (isAdmin) {
-            // Admins just see the message box, no direct navigation
-            setSelectedNotification(notif);
         } else if (notif.link) {
             // Normal notifications with a link should navigate directly
             navigate(notif.link);
@@ -168,9 +168,25 @@ const AdminHeader = ({ handleDrawerToggle }) => {
                         sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1, cursor: 'pointer' }}
                         onClick={handleOpenProfile}
                     >
-                        <Avatar sx={{ bgcolor: '#3b82f6', width: 35, height: 35 }}>
-                            {user?.username ? user.username.charAt(0).toUpperCase() : 'A'}
-                        </Avatar>
+                        <Badge
+                            overlap="circular"
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                            variant="dot"
+                            sx={{
+                                '& .MuiBadge-badge': {
+                                    backgroundColor: '#10b981', // green for online
+                                    color: '#10b981',
+                                    boxShadow: '0 0 0 2px #1e293b',
+                                }
+                            }}
+                        >
+                            <Avatar 
+                                sx={{ bgcolor: '#3b82f6', width: 35, height: 35 }}
+                                src={user?.profilePic ? `http://localhost:5000${user.profilePic}` : ''}
+                            >
+                                {!user?.profilePic && (user?.username ? user.username.charAt(0).toUpperCase() : 'A')}
+                            </Avatar>
+                        </Badge>
                         <Box sx={{ display: { xs: 'none', md: 'block' } }}>
                             <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
                                 {user?.username || 'Admin User'}
@@ -262,7 +278,16 @@ const AdminHeader = ({ handleDrawerToggle }) => {
                             <Box sx={{ display: 'flex', gap: 2, width: '100%', alignItems: 'flex-start' }}>
                                 <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                                     {!notif.isRead && <CircleIcon sx={{ color: '#3b82f6', fontSize: 12, position: 'absolute', left: 8 }} />}
-                                    {getRoleIcon(notif.actorRole) ? (
+                                    {notif.actor && notif.actor.profilePic ? (
+                                        <Avatar 
+                                            src={`http://localhost:5000${notif.actor.profilePic}`} 
+                                            sx={{ width: 32, height: 32 }} 
+                                        />
+                                    ) : notif.actor && notif.actor.username ? (
+                                        <Avatar sx={{ width: 32, height: 32, bgcolor: '#3b82f6', fontSize: 14 }}>
+                                            {notif.actor.username.charAt(0).toUpperCase()}
+                                        </Avatar>
+                                    ) : getRoleIcon(notif.actorRole) ? (
                                         <img src={getRoleIcon(notif.actorRole)} alt={notif.actorRole} style={{ width: 32, height: 32, borderRadius: '50%' }} />
                                     ) : (notif.actorRole === 'System' || !notif.actorRole) && getRoleIcon(user?.role && (typeof user.role === 'object' ? user.role.roleName : user.role)) ? (
                                         <img src={getRoleIcon(user?.role && (typeof user.role === 'object' ? user.role.roleName : user.role))} alt="System Alert" style={{ width: 32, height: 32, borderRadius: '50%' }} />
@@ -304,7 +329,16 @@ const AdminHeader = ({ handleDrawerToggle }) => {
                 }}
             >
                 <DialogTitle sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 2 }}>
-                    {selectedNotification && getRoleIcon(selectedNotification.actorRole) && (
+                    {selectedNotification?.actor && selectedNotification.actor.profilePic ? (
+                        <Avatar 
+                            src={`http://localhost:5000${selectedNotification.actor.profilePic}`} 
+                            sx={{ width: 30, height: 30 }} 
+                        />
+                    ) : selectedNotification?.actor && selectedNotification.actor.username ? (
+                        <Avatar sx={{ width: 30, height: 30, bgcolor: '#3b82f6', fontSize: 14 }}>
+                            {selectedNotification.actor.username.charAt(0).toUpperCase()}
+                        </Avatar>
+                    ) : selectedNotification && getRoleIcon(selectedNotification.actorRole) && (
                         <img src={getRoleIcon(selectedNotification.actorRole)} alt="Role" style={{ width: 30, height: 30, borderRadius: '50%' }} />
                     )}
                     {selectedNotification?.title}

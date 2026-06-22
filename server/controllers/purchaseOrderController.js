@@ -74,6 +74,7 @@ export const createPurchaseOrder = async (req, res) => {
         for (const user of usersToNotify) {
             const notif = await Notification.create({
                 recipient: user._id,
+                actor: req.user ? req.user._id : undefined,
                 title: 'New Purchase Order',
                 message: `Purchase Order ${poNumber} has been created and requires approval.`,
                 type: 'info',
@@ -82,6 +83,7 @@ export const createPurchaseOrder = async (req, res) => {
                 link: '/admin/purchase-orders',
                 actorRole: req.user.role ? req.user.role.roleName : 'Admin'
             });
+            await notif.populate('actor', 'username profilePic');
             if (req.io) {
                 req.io.to(user._id.toString()).emit('new_notification', notif);
             }
@@ -124,6 +126,7 @@ export const approvePurchaseOrder = async (req, res) => {
         for (const user of usersToNotify) {
             const notif = await Notification.create({
                 recipient: user._id,
+                actor: req.user ? req.user._id : undefined,
                 title: 'Purchase Order Approved',
                 message: `Purchase Order ${po.poNumber} has been approved and is ready to receive.`,
                 type: 'success',
@@ -132,6 +135,7 @@ export const approvePurchaseOrder = async (req, res) => {
                 link: '/admin/purchase-orders',
                 actorRole: currentActorRole
             });
+            await notif.populate('actor', 'username profilePic');
             if (req.io) {
                 req.io.to(user._id.toString()).emit('new_notification', notif);
             }
@@ -181,6 +185,7 @@ export const receiveGoods = async (req, res) => {
         for (const userToNotify of usersToNotify) {
             const notif = await Notification.create({
                 recipient: userToNotify._id,
+                actor: req.user ? req.user._id : undefined,
                 title: 'Goods Received',
                 message: `Purchase Order ${po.poNumber} has been received into inventory.`,
                 type: 'success',
@@ -189,6 +194,7 @@ export const receiveGoods = async (req, res) => {
                 link: '/admin/purchase-orders',
                 actorRole: currentActorRole
             });
+            await notif.populate('actor', 'username profilePic');
             if (req.io) {
                 req.io.to(userToNotify._id.toString()).emit('new_notification', notif);
             }

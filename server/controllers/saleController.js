@@ -63,6 +63,7 @@ export const createSale = async (req, res) => {
                 for (const user of usersToNotify) {
                     const notif = await Notification.create({
                         recipient: user._id,
+                        actor: req.user._id,
                         title: 'Low Stock Alert',
                         message: `Product "${product.name}" dropped below reorder level (${product.stock} remaining).`,
                         type: product.stock <= 0 ? 'error' : 'warning',
@@ -70,6 +71,7 @@ export const createSale = async (req, res) => {
                         relatedModel: 'Product',
                         link: '/admin/products'
                     });
+                    await notif.populate('actor', 'username profilePic');
                     if (req.io) {
                         req.io.to(user._id.toString()).emit('new_notification', notif);
                     }

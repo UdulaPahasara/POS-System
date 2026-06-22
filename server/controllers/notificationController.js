@@ -6,6 +6,7 @@ import Notification from '../model/Notification.js';
 export const getNotifications = async (req, res) => {
     try {
         const notifications = await Notification.find({ recipient: req.user._id })
+            .populate('actor', 'username profilePic')
             .sort({ createdAt: -1 })
             .limit(50); // Get latest 50
         res.json(notifications);

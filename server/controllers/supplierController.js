@@ -30,12 +30,14 @@ export const createSupplier = async (req, res) => {
             for (const user of usersToNotify) {
                 const notif = await Notification.create({
                     recipient: user._id,
+                    actor: req.user ? req.user._id : undefined,
                     title: 'New Supplier Added',
                     message: `Supplier ${supplier.supplierName || 'added'} has been created.`,
                     type: 'info',
                     link: '/admin/suppliers',
                     actorRole: currentActorRole
                 });
+                await notif.populate('actor', 'username profilePic');
                 if (req.io) {
                     req.io.to(user._id.toString()).emit('new_notification', notif);
                 }
@@ -67,12 +69,14 @@ export const updateSupplier = async (req, res) => {
             for (const user of usersToNotify) {
                 const notif = await Notification.create({
                     recipient: user._id,
+                    actor: req.user ? req.user._id : undefined,
                     title: 'Supplier Updated',
                     message: `Details for supplier ${supplier.supplierName || ''} have been updated.`,
                     type: 'info',
                     link: '/admin/suppliers',
                     actorRole: currentActorRole
                 });
+                await notif.populate('actor', 'username profilePic');
                 if (req.io) {
                     req.io.to(user._id.toString()).emit('new_notification', notif);
                 }

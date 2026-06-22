@@ -42,6 +42,11 @@ export const updateUserProfile = async (req, res) => {
                 user.password = await bcrypt.hash(req.body.password, salt);
             }
 
+            if (req.file) {
+                // Save the path to the uploaded image
+                user.profilePic = `/uploads/${req.file.filename}`;
+            }
+
             const updatedUser = await user.save();
             const populatedUser = await User.findById(updatedUser._id).select('-password').populate('role', 'roleName');
             

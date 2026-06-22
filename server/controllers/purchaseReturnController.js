@@ -74,6 +74,7 @@ export const createPurchaseReturn = async (req, res) => {
         for (const user of usersToNotify) {
             const notif = await Notification.create({
                 recipient: user._id,
+                actor: req.user ? req.user._id : undefined,
                 title: 'New Purchase Return',
                 message: `Purchase Return ${prNumber} has been created and requires approval.`,
                 type: 'info',
@@ -82,6 +83,7 @@ export const createPurchaseReturn = async (req, res) => {
                 link: '/admin/purchase-returns',
                 actorRole: currentActorRole
             });
+            await notif.populate('actor', 'username profilePic');
             if (req.io) {
                 req.io.to(user._id.toString()).emit('new_notification', notif);
             }
@@ -121,6 +123,7 @@ export const approvePurchaseReturn = async (req, res) => {
         for (const user of usersToNotify) {
             const notif = await Notification.create({
                 recipient: user._id,
+                actor: req.user ? req.user._id : undefined,
                 title: 'Purchase Return Approved',
                 message: `Purchase Return ${pr.prNumber} has been approved and is ready to be returned to supplier.`,
                 type: 'success',
@@ -129,6 +132,7 @@ export const approvePurchaseReturn = async (req, res) => {
                 link: '/admin/purchase-returns',
                 actorRole: currentActorRole
             });
+            await notif.populate('actor', 'username profilePic');
             if (req.io) {
                 req.io.to(user._id.toString()).emit('new_notification', notif);
             }
@@ -187,6 +191,7 @@ export const shipPurchaseReturn = async (req, res) => {
         for (const userToNotify of usersToNotify) {
             const notif = await Notification.create({
                 recipient: userToNotify._id,
+                actor: req.user ? req.user._id : undefined,
                 title: 'Goods Returned',
                 message: `Purchase Return ${pr.prNumber} has been shipped back to the supplier.`,
                 type: 'success',
@@ -195,6 +200,7 @@ export const shipPurchaseReturn = async (req, res) => {
                 link: '/admin/purchase-returns',
                 actorRole: currentActorRole
             });
+            await notif.populate('actor', 'username profilePic');
             if (req.io) {
                 req.io.to(userToNotify._id.toString()).emit('new_notification', notif);
             }

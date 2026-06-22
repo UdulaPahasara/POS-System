@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
     ref: 'Role',
     required: true
   },
+  profilePic: { type: String, default: '' },
   resetPasswordToken: { type: String },
   resetPasswordExpire: { type: Date }
 }, { timestamps: true });

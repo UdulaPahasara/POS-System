@@ -3,7 +3,7 @@ import {
     Box, Typography, Paper, TextField, Button, Grid, Avatar, 
     Divider, CircularProgress, Alert, Snackbar, InputAdornment, IconButton
 } from '@mui/material';
-import { Visibility, VisibilityOff, Save, LockReset } from '@mui/icons-material';
+import { Visibility, VisibilityOff, Save, LockReset, PhotoCamera } from '@mui/icons-material';
 import { usersApi } from '../../services/usersApi';
 
 // Import Role Icons
@@ -23,6 +23,9 @@ const UserProfile = () => {
         newPassword: '',
         confirmPassword: ''
     });
+    
+    const [profilePicFile, setProfilePicFile] = useState(null);
+    const [profilePicPreview, setProfilePicPreview] = useState(null);
     
     const [showPasswords, setShowPasswords] = useState({
         current: false,
@@ -62,6 +65,18 @@ const UserProfile = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setProfilePicFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setProfilePicPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const togglePasswordVisibility = (field) => {
         setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
     };
@@ -82,15 +97,31 @@ const UserProfile = () => {
 
         try {
             setSubmitting(true);
-            const updatePayload = {
-                username: formData.username,
-                email: formData.email,
-                phone: formData.phone,
-            };
+            
+            let updatePayload;
+            if (profilePicFile) {
+                updatePayload = new FormData();
+                updatePayload.append('username', formData.username);
+                updatePayload.append('email', formData.email);
+                updatePayload.append('phone', formData.phone);
+                
+                if (formData.newPassword) {
+                    updatePayload.append('password', formData.newPassword);
+                    updatePayload.append('currentPassword', formData.currentPassword);
+                }
+                
+                updatePayload.append('profilePic', profilePicFile);
+            } else {
+                updatePayload = {
+                    username: formData.username,
+                    email: formData.email,
+                    phone: formData.phone,
+                };
 
-            if (formData.newPassword) {
-                updatePayload.password = formData.newPassword;
-                updatePayload.currentPassword = formData.currentPassword;
+                if (formData.newPassword) {
+                    updatePayload.password = formData.newPassword;
+                    updatePayload.currentPassword = formData.currentPassword;
+                }
             }
 
             const updatedUser = await usersApi.updateProfile(updatePayload);
@@ -160,22 +191,51 @@ const UserProfile = () => {
                             border: '1px solid rgba(255,255,255,0.05)'
                         }}
                     >
-                        <Avatar 
-                            sx={{ 
-                                width: 120, 
-                                height: 120, 
-                                mb: 2,
-                                bgcolor: '#3b82f6',
-                                fontSize: '3rem',
-                                border: '4px solid rgba(59, 130, 246, 0.2)'
-                            }}
-                        >
-                            {getRoleIcon(roleName) ? (
-                                <img src={getRoleIcon(roleName)} alt={roleName} style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
-                            ) : (
-                                user?.username ? user.username.charAt(0).toUpperCase() : 'U'
-                            )}
-                        </Avatar>
+                        <Box sx={{ position: 'relative', display: 'inline-block', mb: 2 }}>
+                            <Avatar 
+                                sx={{ 
+                                    width: 120, 
+                                    height: 120, 
+                                    bgcolor: '#3b82f6',
+                                    fontSize: '3rem',
+                                    border: '4px solid rgba(59, 130, 246, 0.2)'
+                                }}
+                                src={profilePicPreview || (user?.profilePic ? `http://localhost:5000${user.profilePic}` : '')}
+                            >
+                                {(!profilePicPreview && !user?.profilePic) && (
+                                    getRoleIcon(roleName) ? (
+                                        <img src={getRoleIcon(roleName)} alt={roleName} style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+                                    ) : (
+                                        user?.username ? user.username.charAt(0).toUpperCase() : 'U'
+                                    )
+                                )}
+                            </Avatar>
+                            
+                            <input
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                id="profile-pic-upload"
+                                type="file"
+                                onChange={handleFileChange}
+                            />
+                            <label htmlFor="profile-pic-upload">
+                                <IconButton 
+                                    color="primary" 
+                                    aria-label="upload picture" 
+                                    component="span"
+                                    sx={{ 
+                                        position: 'absolute', 
+                                        bottom: 0, 
+                                        right: 0, 
+                                        bgcolor: '#1e293b', 
+                                        border: '2px solid rgba(59, 130, 246, 0.5)',
+                                        '&:hover': { bgcolor: '#3b82f6', color: '#fff' }
+                                    }}
+                                >
+                                    <PhotoCamera fontSize="small" />
+                                </IconButton>
+                            </label>
+                        </Box>
                         
                         <Typography variant="h5" sx={{ color: '#fff', fontWeight: 600, mb: 0.5 }}>
                             {user?.username}

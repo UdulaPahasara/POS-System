@@ -45,6 +45,7 @@ export const createProduct = async (req, res) => {
         for (const user of usersToNotify) {
             const notif = await Notification.create({
                 recipient: user._id,
+                actor: req.user ? req.user._id : undefined,
                 title: 'New Product Added',
                 message: `Product ${name} (${sku}) has been added to inventory.`,
                 type: 'info',
@@ -53,6 +54,7 @@ export const createProduct = async (req, res) => {
                 link: '/admin/inventory',
                 actorRole: req.user && req.user.role ? req.user.role.roleName : 'Admin'
             });
+            await notif.populate('actor', 'username profilePic');
             if (req.io) {
                 req.io.to(user._id.toString()).emit('new_notification', notif);
             }
@@ -226,6 +228,7 @@ export const adjustStock = async (req, res) => {
         for (const user of usersToNotify) {
             const notif = await Notification.create({
                 recipient: user._id,
+                actor: req.user ? req.user._id : undefined,
                 title: 'Inventory Adjusted',
                 message: `Stock for ${product.name} was adjusted by ${quantityChanged} units (${action}). Reason: ${reason || 'Manual Adjustment'}`,
                 type: 'warning',
@@ -234,6 +237,7 @@ export const adjustStock = async (req, res) => {
                 link: '/admin/inventory',
                 actorRole: currentActorRole
             });
+            await notif.populate('actor', 'username profilePic');
             if (req.io) {
                 req.io.to(user._id.toString()).emit('new_notification', notif);
             }

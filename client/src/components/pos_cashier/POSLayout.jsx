@@ -308,8 +308,11 @@ const POSLayout = () => {
                         sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 3, cursor: 'pointer', p: 0.5, borderRadius: 1, '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
                         onClick={(e) => setProfileAnchorEl(e.currentTarget)}
                     >
-                        <Avatar sx={{ bgcolor: '#3b82f6', width: 32, height: 32, fontSize: 14 }}>
-                            {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                        <Avatar 
+                            sx={{ bgcolor: '#3b82f6', width: 32, height: 32, fontSize: 14 }}
+                            src={user?.profilePic ? `http://localhost:5000${user.profilePic}` : ''}
+                        >
+                            {!user?.profilePic && (user?.username ? user.username.charAt(0).toUpperCase() : 'U')}
                         </Avatar>
                         <Box sx={{ display: { xs: 'none', md: 'block' } }}>
                             <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2, color: '#fff' }}>
@@ -520,10 +523,9 @@ const POSLayout = () => {
                                     templateParams, 
                                     'FGdpdlZ02HmY4dEEl'
                                 ).then((response) => {
-                                    console.log('SUCCESS!', response.status, response.text);
                                     setSnackbar({ open: true, message: 'Receipt emailed successfully!', severity: 'success' });
                                 }).catch((err) => {
-                                    console.log('FAILED...', err);
+                                    console.error('Failed to send receipt email', err);
                                     setSnackbar({ open: true, message: 'Failed to send receipt email', severity: 'error' });
                                 });
                             }

@@ -3,7 +3,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, IconButton, Button,
     Chip, Snackbar, Alert, Dialog, DialogTitle, DialogContent, 
-    DialogContentText, DialogActions, Avatar
+    DialogContentText, DialogActions, Avatar, Badge
 } from '@mui/material';
 import { 
     Edit as EditIcon, 
@@ -145,9 +145,25 @@ const UserList = () => {
                         {users.map((user) => (
                             <TableRow key={user._id} sx={{ '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' } }}>
                                 <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <Avatar sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
-                                        <PersonIcon />
-                                    </Avatar>
+                                    <Badge
+                                        overlap="circular"
+                                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                        variant="dot"
+                                        sx={{
+                                            '& .MuiBadge-badge': {
+                                                backgroundColor: user.status === 'Active' ? '#10b981' : (user.status === 'Suspended' ? '#ef4444' : '#f59e0b'),
+                                                color: user.status === 'Active' ? '#10b981' : (user.status === 'Suspended' ? '#ef4444' : '#f59e0b'),
+                                                boxShadow: '0 0 0 2px #1e293b',
+                                            }
+                                        }}
+                                    >
+                                        <Avatar 
+                                            sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}
+                                            src={user.profilePic ? `http://localhost:5000${user.profilePic}` : ''}
+                                        >
+                                            {!user.profilePic && <PersonIcon />}
+                                        </Avatar>
+                                    </Badge>
                                     <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>{user.username}</Typography>
                                 </TableCell>
                                 <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
