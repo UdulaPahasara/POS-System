@@ -12,13 +12,6 @@ import { productsApi } from '../../../services/productsApi';
 import { suppliersApi } from '../../../services/suppliersApi';
 import { categoriesApi } from '../../../services/categoriesApi';
 
-// Swiper 3D Carousel Imports
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { EffectCoverflow, Pagination } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/effect-coverflow';
-import 'swiper/css/pagination';
-
 const PurchaseOrderList = () => {
     const location = useLocation();
     const [highlightedPoId, setHighlightedPoId] = useState(null);
@@ -29,7 +22,6 @@ const PurchaseOrderList = () => {
     const [openAdd, setOpenAdd] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [currentEditingPoId, setCurrentEditingPoId] = useState(null);
-    const [viewMode, setViewMode] = useState('3d'); // '3d' or 'table'
     
     const [formData, setFormData] = useState({ supplier: '', items: [] });
     const [selectedProduct, setSelectedProduct] = useState('');
@@ -278,131 +270,7 @@ const PurchaseOrderList = () => {
                 </Box>
             )}
 
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
-                <Box sx={{ bgcolor: 'rgba(255,255,255,0.05)', p: 0.5, borderRadius: 2, display: 'flex', gap: 0.5 }}>
-                    <Button 
-                        variant={viewMode === '3d' ? 'contained' : 'text'} 
-                        onClick={() => setViewMode('3d')}
-                        startIcon={<ViewCarousel />}
-                        sx={{ borderRadius: 1.5, color: viewMode === '3d' ? '#fff' : '#94a3b8', textTransform: 'none', fontWeight: 600, boxShadow: viewMode === '3d' ? 2 : 0 }}
-                    >
-                        3D Cards
-                    </Button>
-                    <Button 
-                        variant={viewMode === 'table' ? 'contained' : 'text'} 
-                        onClick={() => setViewMode('table')}
-                        startIcon={<TableRows />}
-                        sx={{ borderRadius: 1.5, color: viewMode === 'table' ? '#fff' : '#94a3b8', textTransform: 'none', fontWeight: 600, boxShadow: viewMode === 'table' ? 2 : 0 }}
-                    >
-                        List
-                    </Button>
-                </Box>
-            </Box>
-
-            {viewMode === '3d' ? (
-                <Box sx={{ py: 2, pb: 6, '& .swiper-pagination-bullet': { bgcolor: '#fff' }, '& .swiper-pagination-bullet-active': { bgcolor: '#3b82f6' } }}>
-                    {pos.length === 0 ? (
-                        <Typography sx={{ color: '#94a3b8', textAlign: 'center', py: 5 }}>No purchase orders available.</Typography>
-                    ) : (
-                        <Swiper
-                            effect={'coverflow'}
-                            grabCursor={true}
-                            centeredSlides={true}
-                            slidesPerView={3}
-                            coverflowEffect={{
-                                rotate: 30,
-                                stretch: 0,
-                                depth: 100,
-                                modifier: 1,
-                                slideShadows: true,
-                            }}
-                            pagination={{ clickable: true }}
-                            modules={[EffectCoverflow, Pagination]}
-                            className="po-swiper"
-                            initialSlide={Math.floor(pos.length / 2)}
-                            breakpoints={{
-                                320: { slidesPerView: 1 },
-                                640: { slidesPerView: 2 },
-                                1024: { slidesPerView: 3 }
-                            }}
-                        >
-                            {pos.map((po) => {
-                                const { name, category } = getProductDisplayInfo(po.items);
-                                return (
-                                    <SwiperSlide key={po._id}>
-                                        <Paper sx={{ 
-                                            p: 3, 
-                                            bgcolor: '#1e293b', 
-                                            borderRadius: 4, 
-                                            border: highlightedPoId === po._id ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.1)',
-                                            boxShadow: highlightedPoId === po._id ? '0 0 20px rgba(59, 130, 246, 0.5)' : '0 10px 30px -10px rgba(0,0,0,0.8)',
-                                            height: '100%',
-                                            minHeight: 280,
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            transition: 'all 0.3s ease'
-                                        }}>
-                                            <Typography variant="h6" sx={{ color: '#3b82f6', fontWeight: 800, mb: 1.5, letterSpacing: 0.5 }}>{po.poNumber}</Typography>
-                                            
-                                            <Box sx={{ mb: 2, flex: 1 }}>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                                    <Typography variant="caption" sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>Supplier</Typography>
-                                                    <Typography variant="body2" sx={{ color: '#f8fafc', fontWeight: 600 }}>{po.supplier?.supplierName || 'N/A'}</Typography>
-                                                </Box>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                                    <Typography variant="caption" sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>Category</Typography>
-                                                    <Typography variant="body2" sx={{ color: '#f8fafc', fontWeight: 500 }}>{category}</Typography>
-                                                </Box>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                                    <Typography variant="caption" sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>Products</Typography>
-                                                    <Typography variant="body2" sx={{ color: '#f8fafc', fontWeight: 500, textAlign: 'right', maxWidth: '60%' }} noWrap>{name}</Typography>
-                                                </Box>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                                    <Typography variant="caption" sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>Total Items</Typography>
-                                                    <Typography variant="body2" sx={{ color: '#f8fafc', fontWeight: 500 }}>{po.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}</Typography>
-                                                </Box>
-                                            </Box>
-                                            
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderTop: '1px solid rgba(255,255,255,0.05)', pt: 2, mb: 2 }}>
-                                                <Typography variant="caption" sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>Cost</Typography>
-                                                <Typography variant="h6" sx={{ color: '#10b981', fontWeight: 700 }}>LKR {po.totalCost?.toFixed(2)}</Typography>
-                                            </Box>
-                                            
-                                            <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <Typography variant="caption" sx={{ 
-                                                    px: 1.5, py: 0.5, borderRadius: 2, fontWeight: 700, letterSpacing: 0.5,
-                                                    bgcolor: po.status === 'Pending' ? 'rgba(245, 158, 11, 0.15)' : 
-                                                             po.status === 'Approved' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                                                    color: po.status === 'Pending' ? '#fbbf24' : 
-                                                           po.status === 'Approved' ? '#60a5fa' : '#34d399',
-                                                    border: '1px solid',
-                                                    borderColor: po.status === 'Pending' ? 'rgba(245, 158, 11, 0.3)' : 
-                                                                 po.status === 'Approved' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(16, 185, 129, 0.3)'
-                                                }}>
-                                                    {po.status}
-                                                </Typography>
-                                                
-                                                <Box sx={{ display: 'flex', gap: 1 }}>
-                                                    {canCreate && roleName !== 'Manager' && po.status === 'Pending' && (
-                                                        <Button size="small" variant="outlined" color="info" sx={{ fontWeight: 600, borderRadius: 2, minWidth: 0, px: 1.5 }} onClick={() => handleEdit(po)}>Edit</Button>
-                                                    )}
-                                                    {canApprove && po.status === 'Pending' && (
-                                                        <Button size="small" variant="contained" color="success" sx={{ fontWeight: 600, borderRadius: 2, minWidth: 0, px: 1.5, boxShadow: '0 4px 10px rgba(16,185,129,0.3)' }} onClick={() => handleApprove(po._id)}>Approve</Button>
-                                                    )}
-                                                    {canReceive && po.status === 'Approved' && (
-                                                        <Button size="small" variant="contained" color="primary" sx={{ fontWeight: 600, borderRadius: 2, minWidth: 0, px: 1.5, boxShadow: '0 4px 10px rgba(59,130,246,0.3)' }} onClick={() => handleReceive(po._id)}>Receive</Button>
-                                                    )}
-                                                </Box>
-                                            </Box>
-                                        </Paper>
-                                    </SwiperSlide>
-                                );
-                            })}
-                        </Swiper>
-                    )}
-                </Box>
-            ) : (
-            <TableContainer component={Paper} sx={{ bgcolor: '#1e293b' }}>
+            <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', overflowX: 'hidden' }}>
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -424,9 +292,15 @@ const PurchaseOrderList = () => {
                                 key={po._id} 
                                 id={`po-row-${po._id}`}
                                 sx={{ 
-                                    '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
+                                    '&:hover': { 
+                                        bgcolor: 'rgba(255, 255, 255, 0.04)',
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 8px 25px -5px rgba(0,0,0,0.5)',
+                                        zIndex: 10,
+                                        position: 'relative'
+                                    },
                                     bgcolor: highlightedPoId === po._id ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                                    transition: 'background-color 0.5s ease'
+                                    transition: 'all 0.2s ease-in-out'
                                 }}
                             >
                                 <TableCell sx={{ color: '#fff' }}>{po.poNumber}</TableCell>
@@ -455,7 +329,6 @@ const PurchaseOrderList = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
-            )}
 
             {/* Create PO Dialog */}
             <Dialog 

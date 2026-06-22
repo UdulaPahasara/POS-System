@@ -141,7 +141,7 @@ const Dashboard = () => {
             {/* Summary Cards */}
             <Grid container spacing={3} sx={{ mb: 4, justifyContent: 'center' }}>
                 <Grid item xs={11} sm={5} md={3}>
-                    <SummaryCard title="Today's Sales" value={`Rs.${stats?.todayRevenue?.toLocaleString() || 0}`} subtitle="Calculated from today's orders" icon={<SalesIcon fontSize="large" />} color="#3b82f6" />
+                    <SummaryCard title="Today's Sales" value={`Rs.${stats?.todayRevenue?.toLocaleString() || 0}`} subtitle="Calculated from today's sales" icon={<SalesIcon fontSize="large" />} color="#3b82f6" />
                 </Grid>
                 {userRole === 'Admin' && (
                     <Grid item xs={11} sm={5} md={3}>

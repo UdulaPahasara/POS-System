@@ -12,7 +12,7 @@ export const getDashboardStats = async (req, res) => {
         today.setHours(0, 0, 0, 0);
 
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        
+
         // 1. Today's Sales
         const todaySales = await Sale.aggregate([
             { $match: { createdAt: { $gte: today } } },
@@ -49,14 +49,18 @@ export const getDashboardStats = async (req, res) => {
         // 5. Revenue Trend (Last 7 Days)
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(today.getDate() - 6);
-        sevenDaysAgo.setHours(0,0,0,0);
-        
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+
+        const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
         const trendSales = await Sale.aggregate([
             { $match: { createdAt: { $gte: sevenDaysAgo } } },
-            { $group: {
-                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                total: { $sum: "$total" }
-            }},
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: serverTimezone } },
+                    total: { $sum: "$total" }
+                }
+            },
             { $sort: { _id: 1 } }
         ]);
 
@@ -66,9 +70,14 @@ export const getDashboardStats = async (req, res) => {
         for (let i = 0; i < 7; i++) {
             const d = new Date(sevenDaysAgo);
             d.setDate(d.getDate() + i);
-            const dateStr = d.toISOString().split('T')[0];
+
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const dateStr = `${y}-${m}-${day}`;
+
             const shortDay = d.toLocaleDateString('en-US', { weekday: 'short' });
-            
+
             chartLabels.push(shortDay);
             const found = trendSales.find(t => t._id === dateStr);
             chartData.push(found ? found.total : 0);
@@ -80,7 +89,7 @@ export const getDashboardStats = async (req, res) => {
             id: sale.invoice?.invoiceNumber || sale._id.toString().slice(-6).toUpperCase(),
             customer: sale.customer?.name || 'Walk-in Customer',
             amount: `Rs. ${sale.total.toFixed(2)}`,
-            status: 'Completed' 
+            status: 'Completed'
         }));
 
         // 7. Low Stock Alerts
@@ -104,7 +113,7 @@ export const getDashboardStats = async (req, res) => {
             recentTransactions,
             lowStockItems
         });
-        
+
     } catch (error) {
         console.error('Error fetching dashboard stats:', error);
         res.status(500).json({ message: 'Server error fetching dashboard stats' });
@@ -117,7 +126,7 @@ export const getDashboardStats = async (req, res) => {
 export const getSalesReport = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-        
+
         let query = {};
         if (startDate && endDate) {
             query.createdAt = {
@@ -127,12 +136,12 @@ export const getSalesReport = async (req, res) => {
         }
 
         const sales = await Sale.find(query).populate('invoice').populate('payments');
-        
+
         // Calculate total revenue, total tax, and total savings
         let totalRevenue = 0;
         let totalTax = 0;
         let totalItemsSold = 0;
-        
+
         sales.forEach(sale => {
             totalRevenue += sale.total;
             totalTax += sale.tax;
@@ -171,7 +180,7 @@ export const getSalesReport = async (req, res) => {
 export const getInventoryReport = async (req, res) => {
     try {
         const products = await Product.find({});
-        
+
         let totalStockValue = 0;
         let lowStockCount = 0;
         let outOfStockCount = 0;
@@ -179,7 +188,7 @@ export const getInventoryReport = async (req, res) => {
 
         products.forEach(product => {
             totalStockValue += (product.costPrice * product.stock);
-            
+
             if (product.stock <= 0) {
                 outOfStockCount++;
             } else if (product.stock <= product.reorderLevel) {
@@ -212,7 +221,7 @@ export const getInventoryReport = async (req, res) => {
 export const getAdvancedSalesReport = async (req, res) => {
     try {
         const { interval = 'daily' } = req.query; // daily, weekly, monthly, yearly
-        
+
         let format = '%Y-%m-%d';
         if (interval === 'weekly') format = '%Y-%U';
         if (interval === 'monthly') format = '%Y-%m';
@@ -245,7 +254,7 @@ export const getFinancialReport = async (req, res) => {
         const sales = await Sale.find({}).populate('items.product');
 
         let totalRevenue = 0;
-        let totalCOGS = 0; 
+        let totalCOGS = 0;
 
         sales.forEach(sale => {
             totalRevenue += sale.total;
@@ -276,9 +285,9 @@ export const getFinancialReport = async (req, res) => {
 export const getProductReport = async (req, res) => {
     try {
         const sales = await Sale.find({}).populate('items.product');
-        
+
         const productStats = {};
-        
+
         sales.forEach(sale => {
             sale.items.forEach(item => {
                 if (item.product) {
@@ -299,7 +308,7 @@ export const getProductReport = async (req, res) => {
         });
 
         const productsArray = Object.values(productStats);
-        
+
         const topSelling = [...productsArray].sort((a, b) => b.quantitySold - a.quantitySold).slice(0, 10);
         const slowMoving = [...productsArray].sort((a, b) => a.quantitySold - b.quantitySold).slice(0, 10);
 
@@ -320,9 +329,9 @@ export const getCustomerReport = async (req, res) => {
     try {
         const allCustomers = await Customer.find({});
         const sales = await Sale.find({ "customer.name": { $exists: true, $ne: null } });
-        
+
         const customerStats = {};
-        
+
         // Initialize all registered customers
         allCustomers.forEach(c => {
             const cid = c.phone || c.email || c.name;
@@ -335,7 +344,7 @@ export const getCustomerReport = async (req, res) => {
                 totalSpent: 0
             };
         });
-        
+
         // Add sales data
         sales.forEach(sale => {
             if (sale.customer && sale.customer.name) {
