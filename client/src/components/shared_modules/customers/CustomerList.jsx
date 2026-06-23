@@ -225,7 +225,8 @@ const CustomerList = () => {
 
 // Extracted History Dialog Component
 import { Dialog, DialogTitle, DialogContent, DialogActions, Divider } from '@mui/material';
-import { ReceiptLong as ReceiptIcon } from '@mui/icons-material';
+import { ReceiptLong as ReceiptIcon, Download as DownloadIcon } from '@mui/icons-material';
+import html2pdf from 'html2pdf.js';
 
 const CustomerHistoryDialog = ({ open, handleClose, customer, data, loading }) => {
     const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -239,6 +240,21 @@ const CustomerHistoryDialog = ({ open, handleClose, customer, data, loading }) =
     const handleCloseReceipt = () => {
         setOpenReceipt(false);
         setTimeout(() => setSelectedInvoice(null), 300);
+    };
+
+    const handleDownloadPDF = () => {
+        const element = document.getElementById('customer-receipt-content');
+        if (!element) return;
+        
+        const opt = {
+            margin:       0.5,
+            filename:     `Receipt_${selectedInvoice?.invoiceNumber || 'Download'}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        
+        html2pdf().set(opt).from(element).save();
     };
 
     return (
@@ -347,7 +363,8 @@ const CustomerHistoryDialog = ({ open, handleClose, customer, data, loading }) =
             </IconButton>
             
             {selectedInvoice && (
-                <DialogContent sx={{ p: 4, pt: 5 }}>
+                <Box>
+                    <DialogContent id="customer-receipt-content" sx={{ p: 4, pt: 5, bgcolor: '#f8fafc' }}>
                     {/* Header */}
                     <Box sx={{ textAlign: 'center', mb: 3 }}>
                         <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: 'inherit', letterSpacing: 1 }}>POINT OF SALE</Typography>
@@ -457,6 +474,24 @@ const CustomerHistoryDialog = ({ open, handleClose, customer, data, loading }) =
                         <Typography variant="caption" sx={{ fontFamily: 'inherit', display: 'block', mt: 1 }}>Please come again</Typography>
                     </Box>
                 </DialogContent>
+                <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', borderTop: '1px solid #e2e8f0', bgcolor: '#fff' }}>
+                    <Button 
+                        variant="contained" 
+                        startIcon={<DownloadIcon />}
+                        onClick={handleDownloadPDF}
+                        sx={{ 
+                            bgcolor: '#8b5cf6', 
+                            textTransform: 'none', 
+                            fontWeight: 'bold',
+                            borderRadius: 2,
+                            px: 4,
+                            '&:hover': { bgcolor: '#7c3aed' }
+                        }}
+                    >
+                        Download PDF
+                    </Button>
+                </Box>
+                </Box>
             )}
         </Dialog>
         </>

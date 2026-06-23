@@ -4,8 +4,9 @@ import {
     TableContainer, TableHead, TableRow, CircularProgress,
     Button, Dialog, DialogContent, IconButton, Divider, Fade
 } from '@mui/material';
-import { Description as InvoiceIcon, ReceiptLong as ReceiptIcon, Close as CloseIcon } from '@mui/icons-material';
+import { Description as InvoiceIcon, ReceiptLong as ReceiptIcon, Close as CloseIcon, Download as DownloadIcon } from '@mui/icons-material';
 import { invoiceApi } from '../../../services/invoiceApi';
+import html2pdf from 'html2pdf.js';
 
 const InvoiceList = () => {
     const [invoices, setInvoices] = useState([]);
@@ -40,6 +41,21 @@ const InvoiceList = () => {
     const handleCloseReceipt = () => {
         setOpenReceipt(false);
         setTimeout(() => setSelectedInvoice(null), 300);
+    };
+
+    const handleDownloadPDF = () => {
+        const element = document.getElementById('invoice-receipt-content');
+        if (!element) return;
+        
+        const opt = {
+            margin:       0.5,
+            filename:     `Receipt_${selectedInvoice?.invoiceNumber || 'Download'}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        
+        html2pdf().set(opt).from(element).save();
     };
 
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
@@ -149,7 +165,8 @@ const InvoiceList = () => {
                 </IconButton>
                 
                 {selectedInvoice && (
-                    <DialogContent sx={{ p: 4, pt: 5 }}>
+                    <Box>
+                        <DialogContent id="invoice-receipt-content" sx={{ p: 4, pt: 5, bgcolor: '#f8fafc' }}>
                         {/* Header */}
                         <Box sx={{ textAlign: 'center', mb: 3 }}>
                             <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: 'inherit', letterSpacing: 1 }}>POINT OF SALE</Typography>
@@ -259,6 +276,24 @@ const InvoiceList = () => {
                             <Typography variant="caption" sx={{ fontFamily: 'inherit', display: 'block', mt: 1 }}>Please come again</Typography>
                         </Box>
                     </DialogContent>
+                    <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', borderTop: '1px solid #e2e8f0', bgcolor: '#fff' }}>
+                        <Button 
+                            variant="contained" 
+                            startIcon={<DownloadIcon />}
+                            onClick={handleDownloadPDF}
+                            sx={{ 
+                                bgcolor: '#8b5cf6', 
+                                textTransform: 'none', 
+                                fontWeight: 'bold',
+                                borderRadius: 2,
+                                px: 4,
+                                '&:hover': { bgcolor: '#7c3aed' }
+                            }}
+                        >
+                            Download PDF
+                        </Button>
+                    </Box>
+                    </Box>
                 )}
             </Dialog>
         </Box>
