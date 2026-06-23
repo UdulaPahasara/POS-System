@@ -8,6 +8,7 @@ import Customer from '../model/Customer.js';
 // @access  Private (Admin, Manager)
 export const getDashboardStats = async (req, res) => {
     try {
+        const { paymentFilter = 'all' } = req.query;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -120,6 +121,25 @@ export const getDashboardStats = async (req, res) => {
             ? { name: topSellingAgg[0].name, quantity: topSellingAgg[0].totalQuantity } 
             : { name: 'N/A', quantity: 0 };
 
+        // 9. Payment Stats (Cash/Card) based on filter
+        let matchCondition = {};
+        if (paymentFilter === 'today') {
+            matchCondition = { createdAt: { $gte: today } };
+        } else if (paymentFilter === 'monthly') {
+            matchCondition = { createdAt: { $gte: startOfMonth } };
+        }
+
+        const paymentStats = await Sale.aggregate([
+            { $match: matchCondition },
+            { $group: { 
+                _id: null, 
+                cashTotal: { $sum: '$cashAmount' },
+                cardTotal: { $sum: '$cardAmount' }
+            }}
+        ]);
+        const cashTotal = paymentStats[0]?.cashTotal || 0;
+        const cardTotal = paymentStats[0]?.cardTotal || 0;
+
         res.json({
             todayRevenue,
             monthlyRevenue,
@@ -131,7 +151,9 @@ export const getDashboardStats = async (req, res) => {
             },
             recentTransactions,
             lowStockItems,
-            topSellingProduct
+            topSellingProduct,
+            cashTotal,
+            cardTotal
         });
 
     } catch (error) {

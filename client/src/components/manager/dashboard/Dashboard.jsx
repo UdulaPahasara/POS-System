@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Grid, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Chip } from '@mui/material';
+import { Box, Grid, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Chip, Select, MenuItem, FormControl } from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -19,7 +19,9 @@ import {
     TrendingUp as ProfitIcon,
     Inventory as StockIcon,
     Star as StarIcon,
-    WarningAmber as WarningIcon
+    WarningAmber as WarningIcon,
+    LocalAtm as CashIcon,
+    CreditCard as CardIcon
 } from '@mui/icons-material';
 import { useNotifications } from '../../../context/NotificationContext';
 import { reportsApi } from '../../../services/reportsApi';
@@ -79,6 +81,7 @@ const Dashboard = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [paymentFilter, setPaymentFilter] = useState('all');
 
     // Get user role
     const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
@@ -88,7 +91,7 @@ const Dashboard = () => {
 
     const fetchDashboardStats = async () => {
         try {
-            const data = await reportsApi.getDashboardStats();
+            const data = await reportsApi.getDashboardStats(paymentFilter);
             setStats(data);
             setLoading(false);
         } catch (err) {
@@ -100,7 +103,7 @@ const Dashboard = () => {
 
     useEffect(() => {
         fetchDashboardStats();
-    }, []);
+    }, [paymentFilter]);
 
     const { socket } = useNotifications();
     useEffect(() => {
@@ -112,7 +115,7 @@ const Dashboard = () => {
         };
         socket.on('data_updated', handleUpdate);
         return () => socket.off('data_updated', handleUpdate);
-    }, [socket]);
+    }, [socket, paymentFilter]);
 
     if (loading) return <Box sx={{ p: 4 }}><Typography sx={{ color: '#fff' }}>Loading Dashboard...</Typography></Box>;
     if (error) return <Box sx={{ p: 4 }}><Typography sx={{ color: '#ef4444' }}>{error}</Typography></Box>;
@@ -196,6 +199,53 @@ const Dashboard = () => {
                     </Box>
                 </Paper>
             )}
+
+            {/* Payment Summary Section */}
+            <Box sx={{ mb: 4 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>Payment Summary</Typography>
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <Select
+                            value={paymentFilter}
+                            onChange={(e) => setPaymentFilter(e.target.value)}
+                            sx={{ 
+                                color: '#fff', 
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' },
+                                '& .MuiSvgIcon-root': { color: '#fff' }
+                            }}
+                        >
+                            <MenuItem value="all">All Time</MenuItem>
+                            <MenuItem value="today">Today</MenuItem>
+                            <MenuItem value="monthly">This Month</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
+                <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6}>
+                        <SummaryCard 
+                            title="Cash Payments" 
+                            value={`Rs.${stats?.cashTotal?.toLocaleString() || 0}`} 
+                            subtitle={paymentFilter === 'all' ? 'Total cash received' : paymentFilter === 'today' ? 'Cash received today' : 'Cash received this month'}
+                            icon={<CashIcon fontSize="large" />} 
+                            color="#10b981" 
+                            subtitleColor="#10b981" 
+                            delay={0.1}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <SummaryCard 
+                            title="Card Payments" 
+                            value={`Rs.${stats?.cardTotal?.toLocaleString() || 0}`} 
+                            subtitle={paymentFilter === 'all' ? 'Total card payments' : paymentFilter === 'today' ? 'Card payments today' : 'Card payments this month'}
+                            icon={<CardIcon fontSize="large" />} 
+                            color="#3b82f6" 
+                            subtitleColor="#3b82f6" 
+                            delay={0.2}
+                        />
+                    </Grid>
+                </Grid>
+            </Box>
 
             {/* Data Tables */}
             <Grid container spacing={3}>

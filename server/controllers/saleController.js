@@ -148,6 +148,9 @@ export const createSale = async (req, res) => {
         const change = paymentMethod === 'Cash' ? Number(Math.max(0, amountPaid - finalTotal).toFixed(2)) : 0;
         
         finalTotal = Number(finalTotal.toFixed(2));
+        
+        const cashAmount = paymentMethod === 'Cash' ? finalTotal : 0;
+        const cardAmount = paymentMethod === 'Card' ? finalTotal : 0;
 
         let sale = new Sale({
             cashier: req.user._id, // Assuming authMiddleware sets req.user
@@ -160,6 +163,8 @@ export const createSale = async (req, res) => {
             subtotal: calculatedSubtotal,
             tax,
             total: finalTotal,
+            cashAmount,
+            cardAmount,
             pointsEarned,
             pointsRedeemed: pointsToRedeem
         });

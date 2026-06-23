@@ -61,6 +61,14 @@ const saleSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    cashAmount: {
+        type: Number,
+        default: 0
+    },
+    cardAmount: {
+        type: Number,
+        default: 0
+    },
     pointsEarned: {
         type: Number,
         default: 0

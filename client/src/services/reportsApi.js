@@ -1,7 +1,7 @@
 import api from './api';
 
 export const reportsApi = {
-    getDashboardStats: () => api.get('/reports/dashboard'),
+    getDashboardStats: (paymentFilter = 'all') => api.get('/reports/dashboard', { params: { paymentFilter } }),
     getSalesReport: (filters) => api.get('/reports/sales/advanced', { params: filters }),
     getProductReport: (filters) => api.get('/reports/products', { params: filters }),
     getInventoryReport: (filters) => api.get('/reports/inventory', { params: filters }),
