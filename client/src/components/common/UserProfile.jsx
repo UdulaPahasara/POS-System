@@ -306,20 +306,7 @@ const UserProfile = () => {
                                         }}
                                     />
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="Username"
-                                        name="username"
-                                        value={formData.username}
-                                        onChange={handleInputChange}
-                                        required
-                                        sx={{ 
-                                            '& .MuiOutlinedInput-root': { color: '#fff', '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' } },
-                                            '& .MuiInputLabel-root': { color: '#94a3b8' }
-                                        }}
-                                    />
-                                </Grid>
+
                                 <Grid item xs={12} sm={6}>
                                     <TextField
                                         fullWidth
@@ -368,18 +355,26 @@ const UserProfile = () => {
                                                     type={showPasswords.current ? 'text' : 'password'}
                                                     value={formData.currentPassword}
                                                     onChange={handleInputChange}
+                                                    variant="outlined"
                                                     sx={{ 
                                                         '& .MuiOutlinedInput-root': { color: '#fff', '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' } },
                                                         '& .MuiInputLabel-root': { color: '#94a3b8' }
                                                     }}
-                                                    InputProps={{
-                                                        endAdornment: (
-                                                            <InputAdornment position="end">
-                                                                <IconButton onClick={() => togglePasswordVisibility('current')} edge="end" sx={{ color: '#94a3b8' }}>
-                                                                    {showPasswords.current ? <VisibilityOff /> : <Visibility />}
-                                                                </IconButton>
-                                                            </InputAdornment>
-                                                        )
+                                                    slotProps={{
+                                                        input: {
+                                                            endAdornment: (
+                                                                <InputAdornment position="end">
+                                                                    <IconButton 
+                                                                        onClick={() => togglePasswordVisibility('current')} 
+                                                                        onMouseDown={(e) => e.preventDefault()}
+                                                                        edge="end" 
+                                                                        sx={{ color: '#94a3b8' }}
+                                                                    >
+                                                                        {showPasswords.current ? <VisibilityOff /> : <Visibility />}
+                                                                    </IconButton>
+                                                                </InputAdornment>
+                                                            )
+                                                        }
                                                     }}
                                                 />
                                             </Grid>
@@ -392,18 +387,26 @@ const UserProfile = () => {
                                                     type={showPasswords.new ? 'text' : 'password'}
                                                     value={formData.newPassword}
                                                     onChange={handleInputChange}
+                                                    variant="outlined"
                                                     sx={{ 
                                                         '& .MuiOutlinedInput-root': { color: '#fff', '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' } },
                                                         '& .MuiInputLabel-root': { color: '#94a3b8' }
                                                     }}
-                                                    InputProps={{
-                                                        endAdornment: (
-                                                            <InputAdornment position="end">
-                                                                <IconButton onClick={() => togglePasswordVisibility('new')} edge="end" sx={{ color: '#94a3b8' }}>
-                                                                    {showPasswords.new ? <VisibilityOff /> : <Visibility />}
-                                                                </IconButton>
-                                                            </InputAdornment>
-                                                        )
+                                                    slotProps={{
+                                                        input: {
+                                                            endAdornment: (
+                                                                <InputAdornment position="end">
+                                                                    <IconButton 
+                                                                        onClick={() => togglePasswordVisibility('new')} 
+                                                                        onMouseDown={(e) => e.preventDefault()}
+                                                                        edge="end" 
+                                                                        sx={{ color: '#94a3b8' }}
+                                                                    >
+                                                                        {showPasswords.new ? <VisibilityOff /> : <Visibility />}
+                                                                    </IconButton>
+                                                                </InputAdornment>
+                                                            )
+                                                        }
                                                     }}
                                                 />
                                             </Grid>
@@ -416,18 +419,26 @@ const UserProfile = () => {
                                                     type={showPasswords.confirm ? 'text' : 'password'}
                                                     value={formData.confirmPassword}
                                                     onChange={handleInputChange}
+                                                    variant="outlined"
                                                     sx={{ 
                                                         '& .MuiOutlinedInput-root': { color: '#fff', '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' } },
                                                         '& .MuiInputLabel-root': { color: '#94a3b8' }
                                                     }}
-                                                    InputProps={{
-                                                        endAdornment: (
-                                                            <InputAdornment position="end">
-                                                                <IconButton onClick={() => togglePasswordVisibility('confirm')} edge="end" sx={{ color: '#94a3b8' }}>
-                                                                    {showPasswords.confirm ? <VisibilityOff /> : <Visibility />}
-                                                                </IconButton>
-                                                            </InputAdornment>
-                                                        )
+                                                    slotProps={{
+                                                        input: {
+                                                            endAdornment: (
+                                                                <InputAdornment position="end">
+                                                                    <IconButton 
+                                                                        onClick={() => togglePasswordVisibility('confirm')} 
+                                                                        onMouseDown={(e) => e.preventDefault()}
+                                                                        edge="end" 
+                                                                        sx={{ color: '#94a3b8' }}
+                                                                    >
+                                                                        {showPasswords.confirm ? <VisibilityOff /> : <Visibility />}
+                                                                    </IconButton>
+                                                                </InputAdornment>
+                                                            )
+                                                        }
                                                     }}
                                                 />
                                             </Grid>

@@ -217,21 +217,34 @@ const ProductDialog = ({ open, handleClose, formData, setFormData, handleSubmit,
                                 </Grid>
                                 {/* Discount Amount */}
                                 <Grid item xs={12} sm={4}>
-                                    <TextField
-                                        fullWidth
-                                        label="Discount Amount"
-                                        name="discountAmount"
-                                        type="number"
-                                        value={formData.discountAmount !== undefined ? formData.discountAmount : ''}
-                                        onChange={handleChange}
-                                        variant="outlined"
-                                        sx={inputStyles}
-                                        InputProps={{ startAdornment: (
-                                            <InputAdornment position="start">
-                                                {formData.discountType === 'percentage' ? '%' : 'LKR '}
-                                            </InputAdornment>
-                                        )}}
-                                    />
+                                    <Box sx={{ position: 'relative', width: '100%' }}>
+                                        <TextField
+                                            key={`discount-field-${formData.discountType || 'fixed'}`}
+                                            fullWidth
+                                            label={formData.discountType === 'percentage' ? 'Discount Percentage' : 'Discount Amount'}
+                                            name="discountAmount"
+                                            type="number"
+                                            value={formData.discountAmount === 0 ? '' : (formData.discountAmount !== undefined ? formData.discountAmount : '')}
+                                            onChange={handleChange}
+                                            variant="outlined"
+                                            sx={{ 
+                                                ...inputStyles,
+                                                '& input': { pr: formData.discountType === 'percentage' ? '30px' : undefined }
+                                            }}
+                                            InputProps={{
+                                                startAdornment: formData.discountType !== 'percentage' ? (
+                                                    <InputAdornment position="start">
+                                                        <Typography sx={{color:'#94a3b8'}}>LKR </Typography>
+                                                    </InputAdornment>
+                                                ) : null
+                                            }}
+                                        />
+                                        {formData.discountType === 'percentage' && (
+                                            <Box sx={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+                                                <Typography sx={{ color: '#94a3b8', fontSize: '1rem' }}>%</Typography>
+                                            </Box>
+                                        )}
+                                    </Box>
                                 </Grid>
                             </Grid>
                         </Grid>
@@ -241,7 +254,7 @@ const ProductDialog = ({ open, handleClose, formData, setFormData, handleSubmit,
 
                     {/* Section 3: Media & Description */}
                     <Grid container spacing={4}>
-                        <Grid item xs={12}>
+                        <Grid item xs={12} md={3}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                 <ImageIcon sx={{ color: '#60a5fa', fontSize: 20 }} />
                                 <Typography variant="subtitle2" sx={{ color: '#60a5fa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -252,37 +265,58 @@ const ProductDialog = ({ open, handleClose, formData, setFormData, handleSubmit,
                                 Product image and description shown on the POS screen and customer receipts.
                             </Typography>
                         </Grid>
-                        <Grid item xs={12}>
+                        <Grid item xs={12} md={9}>
                             <Grid container spacing={2.5}>
-                                <Grid item xs={12} sm={8}>
+                                <Grid item xs={12} sm={9}>
                                     <TextField fullWidth label="Product Description" name="description" multiline rows={5} value={formData.description} onChange={handleChange} variant="outlined" sx={inputStyles} placeholder="Write a short description of the product..." />
                                 </Grid>
-                                <Grid item xs={12} sm={4}>
-                                    <Button variant="outlined" component="label" fullWidth sx={{ height: '100%', minHeight: '140px', color: formData.image ? '#4ade80' : '#94a3b8', borderColor: formData.image ? 'rgba(74, 222, 128, 0.5)' : 'rgba(255,255,255,0.1)', borderStyle: 'dashed', borderWidth: 2, borderRadius: 2, textTransform: 'none', transition: 'all 0.2s ease', '&:hover': { borderColor: '#3b82f6', bgcolor: 'rgba(59, 130, 246, 0.05)', transform: 'translateY(-2px)' }, position: 'relative', overflow: 'hidden' }}>
-                                        {formData.image ? (
-                                            <Box sx={{ position: 'absolute', inset: 0 }}>
+                                <Grid item xs={12} sm={3} sx={{ display: 'flex', flexDirection: 'column' }}>
+                                    <Box 
+                                        component="label" 
+                                        sx={{ 
+                                            display: 'flex', 
+                                            flexDirection: 'column', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center', 
+                                            width: '100%', 
+                                            flex: 1, 
+                                            minHeight: '140px', 
+                                            borderColor: formData.image ? 'rgba(74, 222, 128, 0.5)' : 'rgba(255,255,255,0.1)', 
+                                            borderStyle: 'dashed', 
+                                            borderWidth: 2, 
+                                            borderRadius: 2, 
+                                            transition: 'all 0.2s ease', 
+                                            '&:hover': { borderColor: '#3b82f6', bgcolor: 'rgba(59, 130, 246, 0.05)' }, 
+                                            position: 'relative', 
+                                            overflow: 'hidden',
+                                            cursor: 'pointer',
+                                            boxSizing: 'border-box',
+                                            p: 2
+                                        }}
+                                    >
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, opacity: formData.image ? 0 : 1, transition: 'opacity 0.2s' }}>
+                                            <CloudUploadIcon sx={{ fontSize: 36, color: '#3b82f6' }} />
+                                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#94a3b8', textAlign: 'center' }}>
+                                                Upload Image
+                                            </Typography>
+                                            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+                                                PNG, JPG, GIF
+                                            </Typography>
+                                        </Box>
+                                        {formData.image && (
+                                            <Box sx={{ position: 'absolute', inset: 0, p: 1 }}>
                                                 <img 
                                                     src={typeof formData.image === 'string' ? `http://localhost:5000${formData.image}` : URL.createObjectURL(formData.image)} 
                                                     alt="Product Preview" 
-                                                    style={{ width: '100%', height: '100%', objectFit: 'contain', backgroundColor: 'rgba(0,0,0,0.5)' }} 
+                                                    style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '4px' }} 
                                                 />
-                                                <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(0,0,0,0.5)', opacity: 0, transition: 'opacity 0.2s', '&:hover': { opacity: 1 } }}>
-                                                    <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>Change Image</Typography>
+                                                <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(0,0,0,0.6)', opacity: 0, transition: 'opacity 0.2s', '&:hover': { opacity: 1 }, borderRadius: '4px' }}>
+                                                    <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>Change</Typography>
                                                 </Box>
-                                            </Box>
-                                        ) : (
-                                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
-                                                <CloudUploadIcon sx={{ fontSize: 36, color: '#3b82f6' }} />
-                                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                                    Upload Image
-                                                </Typography>
-                                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)' }}>
-                                                    PNG, JPG, GIF up to 5MB
-                                                </Typography>
                                             </Box>
                                         )}
                                         <input type="file" hidden accept="image/*" onChange={(e) => { if (e.target.files && e.target.files[0]) { setFormData(prev => ({ ...prev, image: e.target.files[0] })); } }} />
-                                    </Button>
+                                    </Box>
                                 </Grid>
                             </Grid>
                         </Grid>

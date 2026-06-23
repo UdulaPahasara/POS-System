@@ -4,7 +4,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, Button, IconButton,
     Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem,
-    Snackbar, Alert
+    Snackbar, Alert, Fade
 } from '@mui/material';
 import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
 import { useNotifications } from '../../../context/NotificationContext';
@@ -233,7 +233,7 @@ const PurchaseReturnList = () => {
             </Box>
 
             <TableContainer component={Paper} sx={{ 
-                bgcolor: '#1e293b', borderRadius: 2,
+                bgcolor: '#1e293b', borderRadius: 2, border: '1px solid rgba(255,255,255,0.05)',
                 animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
                 '@keyframes slideUp': {
                     '0%': { opacity: 0, transform: 'translateY(30px)' },
@@ -260,11 +260,11 @@ const PurchaseReturnList = () => {
                                 <TableCell colSpan={8} align="center" sx={{ color: '#94a3b8', py: 4, borderBottom: 'none' }}>No returns found.</TableCell>
                             </TableRow>
                         ) : (
-                            returns.map((pr) => {
+                            returns.map((pr, index) => {
                                 const { name, category } = getProductDisplayInfo(pr.items);
                                 return (
+                                <Fade in={true} timeout={500} style={{ transitionDelay: `${index * 150}ms` }} key={pr._id}>
                                 <TableRow 
-                                    key={pr._id} 
                                     id={`pr-row-${pr._id}`}
                                     sx={{ 
                                         '&:hover': { 
@@ -298,6 +298,7 @@ const PurchaseReturnList = () => {
                                         )}
                                     </TableCell>
                                 </TableRow>
+                                </Fade>
                                 );
                             })
                         )}

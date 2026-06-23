@@ -25,6 +25,10 @@ const customerSchema = new mongoose.Schema({
     loyaltyPoints: {
         type: Number,
         default: 0
+    },
+    totalRedeemedPoints: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true

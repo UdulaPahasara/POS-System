@@ -11,7 +11,8 @@ import {
     CircularProgress,
     Snackbar,
     Tabs,
-    Tab
+    Tab,
+    Fade
 } from '@mui/material';
 import { 
     Save as SaveIcon,
@@ -122,10 +123,25 @@ const SettingsLayout = () => {
 
             {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
-            <Grid container spacing={3}>
+            <Grid container spacing={3} sx={{
+                animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
+                '@keyframes slideUp': {
+                    '0%': { opacity: 0, transform: 'translateY(30px)' },
+                    '100%': { opacity: 1, transform: 'translateY(0)' }
+                }
+            }}>
                 {/* Store Details Card */}
                 <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 4, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', height: '100%' }}>
+                    <Fade in={true} timeout={500} style={{ transitionDelay: '0ms' }}>
+                        <Paper sx={{ 
+                            p: 4, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', height: '100%',
+                            transition: 'all 0.2s ease-in-out',
+                            '&:hover': {
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 8px 25px -5px rgba(0,0,0,0.5)',
+                                borderColor: 'rgba(255,255,255,0.1)'
+                            }
+                        }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1.5 }}>
                             <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa' }}>
                                 <StoreIcon />
@@ -208,7 +224,8 @@ const SettingsLayout = () => {
                                 />
                             </Grid>
                         </Grid>
-                    </Paper>
+                        </Paper>
+                    </Fade>
                 </Grid>
 
                 {/* Financial & Receipt Details */}
@@ -216,7 +233,16 @@ const SettingsLayout = () => {
                     <Grid container spacing={3}>
                         {/* Financial Settings */}
                         <Grid item xs={12}>
-                            <Paper sx={{ p: 4, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <Fade in={true} timeout={500} style={{ transitionDelay: '150ms' }}>
+                                <Paper sx={{ 
+                                    p: 4, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 8px 25px -5px rgba(0,0,0,0.5)',
+                                        borderColor: 'rgba(255,255,255,0.1)'
+                                    }
+                                }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1.5 }}>
                                     <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#34d399' }}>
                                         <MoneyIcon />
@@ -264,12 +290,22 @@ const SettingsLayout = () => {
                                         />
                                     </Grid>
                                 </Grid>
-                            </Paper>
+                                </Paper>
+                            </Fade>
                         </Grid>
 
                         {/* Receipt Configuration */}
                         <Grid item xs={12}>
-                            <Paper sx={{ p: 4, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <Fade in={true} timeout={500} style={{ transitionDelay: '300ms' }}>
+                                <Paper sx={{ 
+                                    p: 4, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 8px 25px -5px rgba(0,0,0,0.5)',
+                                        borderColor: 'rgba(255,255,255,0.1)'
+                                    }
+                                }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1.5 }}>
                                     <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(139, 92, 246, 0.1)', color: '#a78bfa' }}>
                                         <ReceiptIcon />
@@ -296,7 +332,8 @@ const SettingsLayout = () => {
                                         }
                                     }}
                                 />
-                            </Paper>
+                                </Paper>
+                            </Fade>
                         </Grid>
                     </Grid>
                 </Grid>

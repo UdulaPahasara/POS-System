@@ -3,7 +3,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, IconButton, Button,
     TextField, Dialog, DialogTitle, DialogContent, DialogActions,
-    Snackbar, Alert, DialogContentText
+    Snackbar, Alert, DialogContentText, Fade
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import { useNotifications } from '../../../context/NotificationContext';
@@ -100,7 +100,14 @@ const CategoryList = () => {
                 </Button>
             </Box>
 
-            <TableContainer component={Paper} sx={{ bgcolor: '#1e293b' }}>
+            <TableContainer component={Paper} sx={{ 
+                bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2,
+                animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
+                '@keyframes slideUp': {
+                    '0%': { opacity: 0, transform: 'translateY(30px)' },
+                    '100%': { opacity: 1, transform: 'translateY(0)' }
+                }
+            }}>
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -111,16 +118,29 @@ const CategoryList = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {categories.map((cat) => (
-                            <TableRow key={cat._id}>
-                                <TableCell sx={{ color: '#fff' }}>{cat.name}</TableCell>
-                                <TableCell sx={{ color: '#fff' }}>{cat.description}</TableCell>
-                                <TableCell sx={{ color: '#fff' }}>{cat.taxRate}%</TableCell>
-                                <TableCell align="right">
-                                    <IconButton onClick={() => handleOpen(cat)} sx={{ color: '#60a5fa' }}><EditIcon /></IconButton>
-                                    <IconButton onClick={() => handleDeleteClick(cat._id)} sx={{ color: '#ef4444' }}><DeleteIcon /></IconButton>
-                                </TableCell>
-                            </TableRow>
+                        {categories.map((cat, index) => (
+                            <Fade in={true} timeout={500} style={{ transitionDelay: `${index * 150}ms` }} key={cat._id}>
+                                <TableRow
+                                    sx={{ 
+                                        '&:hover': { 
+                                            bgcolor: 'rgba(255, 255, 255, 0.04)',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 8px 25px -5px rgba(0,0,0,0.5)',
+                                            zIndex: 10,
+                                            position: 'relative'
+                                        },
+                                        transition: 'all 0.2s ease-in-out'
+                                    }}
+                                >
+                                    <TableCell sx={{ color: '#fff' }}>{cat.name}</TableCell>
+                                    <TableCell sx={{ color: '#fff' }}>{cat.description}</TableCell>
+                                    <TableCell sx={{ color: '#fff' }}>{cat.taxRate}%</TableCell>
+                                    <TableCell align="right">
+                                        <IconButton onClick={() => handleOpen(cat)} sx={{ color: '#60a5fa' }}><EditIcon /></IconButton>
+                                        <IconButton onClick={() => handleDeleteClick(cat._id)} sx={{ color: '#ef4444' }}><DeleteIcon /></IconButton>
+                                    </TableCell>
+                                </TableRow>
+                            </Fade>
                         ))}
                     </TableBody>
                 </Table>

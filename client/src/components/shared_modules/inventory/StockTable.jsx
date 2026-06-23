@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { 
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
-    Paper, Typography, Button, Chip, Avatar, Snackbar, Alert 
+    Paper, Typography, Button, Chip, Avatar, Snackbar, Alert, Fade
 } from '@mui/material';
 import { Inventory2 as InventoryIcon, Edit as EditIcon } from '@mui/icons-material';
 import StockAdjustDialog from './StockAdjustDialog';
@@ -85,7 +85,14 @@ const StockTable = () => {
 
     return (
         <>
-            <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', borderRadius: 2 }}>
+            <TableContainer component={Paper} sx={{ 
+                bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2,
+                animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
+                '@keyframes slideUp': {
+                    '0%': { opacity: 0, transform: 'translateY(30px)' },
+                    '100%': { opacity: 1, transform: 'translateY(0)' }
+                }
+            }}>
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -98,47 +105,54 @@ const StockTable = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {products.map((product) => (
-                            <TableRow 
-                                key={product._id} 
-                                id={`product-row-${product._id}`}
-                                sx={{ 
-                                    '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
-                                    transition: 'background-color 0.5s ease',
-                                    bgcolor: highlightId === product._id ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                                    ...(highlightId === product._id && {
-                                        boxShadow: 'inset 0 0 0 2px rgba(59, 130, 246, 0.5)'
-                                    })
-                                }}
-                            >
-                                <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <Avatar 
-                                        src={product.imageUrl ? `http://localhost:5000${product.imageUrl}` : undefined} 
-                                        variant="rounded" 
-                                        sx={{ width: 40, height: 40, bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}
-                                    >
-                                        {!product.imageUrl && <InventoryIcon fontSize="small" />}
-                                    </Avatar>
-                                    <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>{product.name}</Typography>
-                                </TableCell>
-                                <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{product.sku}</TableCell>
-                                <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 800 }}>{product.stock}</TableCell>
-                                <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{product.reorderLevel}</TableCell>
-                                <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    {getStockStatus(product.stock, product.reorderLevel)}
-                                </TableCell>
-                                <TableCell align="right" sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <Button 
-                                        variant="outlined" 
-                                        size="small" 
-                                        startIcon={<EditIcon />}
-                                        onClick={() => handleOpenDialog(product)}
-                                        sx={{ color: '#60a5fa', borderColor: 'rgba(96, 165, 250, 0.5)', textTransform: 'none' }}
-                                    >
-                                        Adjust
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
+                        {products.map((product, index) => (
+                            <Fade in={true} timeout={500} style={{ transitionDelay: `${index * 150}ms` }} key={product._id}>
+                                <TableRow 
+                                    id={`product-row-${product._id}`}
+                                    sx={{ 
+                                        '&:hover': { 
+                                            bgcolor: 'rgba(255, 255, 255, 0.04)',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 8px 25px -5px rgba(0,0,0,0.5)',
+                                            zIndex: 10,
+                                            position: 'relative'
+                                        },
+                                        transition: 'all 0.2s ease-in-out',
+                                        bgcolor: highlightId === product._id ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                                        ...(highlightId === product._id && {
+                                            boxShadow: 'inset 0 0 0 2px rgba(59, 130, 246, 0.5)'
+                                        })
+                                    }}
+                                >
+                                    <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        <Avatar 
+                                            src={product.imageUrl ? `http://localhost:5000${product.imageUrl}` : undefined} 
+                                            variant="rounded" 
+                                            sx={{ width: 40, height: 40, bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}
+                                        >
+                                            {!product.imageUrl && <InventoryIcon fontSize="small" />}
+                                        </Avatar>
+                                        <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600 }}>{product.name}</Typography>
+                                    </TableCell>
+                                    <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{product.sku}</TableCell>
+                                    <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 800 }}>{product.stock}</TableCell>
+                                    <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{product.reorderLevel}</TableCell>
+                                    <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        {getStockStatus(product.stock, product.reorderLevel)}
+                                    </TableCell>
+                                    <TableCell align="right" sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <Button 
+                                            variant="outlined" 
+                                            size="small" 
+                                            startIcon={<EditIcon />}
+                                            onClick={() => handleOpenDialog(product)}
+                                            sx={{ color: '#60a5fa', borderColor: 'rgba(96, 165, 250, 0.5)', textTransform: 'none' }}
+                                        >
+                                            Adjust
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            </Fade>
                         ))}
                     </TableBody>
                 </Table>

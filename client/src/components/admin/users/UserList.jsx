@@ -3,7 +3,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, IconButton, Button,
     Chip, Snackbar, Alert, Dialog, DialogTitle, DialogContent, 
-    DialogContentText, DialogActions, Avatar, Badge
+    DialogContentText, DialogActions, Avatar, Badge, Fade
 } from '@mui/material';
 import { 
     Edit as EditIcon, 
@@ -130,7 +130,14 @@ const UserList = () => {
                 </Button>
             </Box>
 
-            <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', borderRadius: 2 }}>
+            <TableContainer component={Paper} sx={{ 
+                bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2,
+                animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
+                '@keyframes slideUp': {
+                    '0%': { opacity: 0, transform: 'translateY(30px)' },
+                    '100%': { opacity: 1, transform: 'translateY(0)' }
+                }
+            }}>
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -142,8 +149,20 @@ const UserList = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {users.map((user) => (
-                            <TableRow key={user._id} sx={{ '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' } }}>
+                        {users.map((user, index) => (
+                            <Fade in={true} timeout={500} style={{ transitionDelay: `${index * 150}ms` }} key={user._id}>
+                                <TableRow 
+                                    sx={{ 
+                                        '&:hover': { 
+                                            bgcolor: 'rgba(255, 255, 255, 0.04)',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 8px 25px -5px rgba(0,0,0,0.5)',
+                                            zIndex: 10,
+                                            position: 'relative'
+                                        },
+                                        transition: 'all 0.2s ease-in-out'
+                                    }}
+                                >
                                 <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 2 }}>
                                     <Badge
                                         overlap="circular"
@@ -184,7 +203,8 @@ const UserList = () => {
                                         <DeleteIcon fontSize="small" />
                                     </IconButton>
                                 </TableCell>
-                            </TableRow>
+                                </TableRow>
+                            </Fade>
                         ))}
                         {users.length === 0 && (
                             <TableRow>

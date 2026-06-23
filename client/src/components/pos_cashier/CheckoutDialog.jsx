@@ -24,8 +24,8 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
         }
     }, [open]);
 
-    // Calculate final total after points (1 point = 100 LKR discount)
-    const finalTotal = Number(Math.max(0, total - (usePoints ? pointsToRedeem * 100 : 0)).toFixed(2));
+    // Calculate final total after points (1 point = 1 LKR discount)
+    const finalTotal = Number(Math.max(0, total - (usePoints ? pointsToRedeem : 0)).toFixed(2));
 
     useEffect(() => {
         if (paymentMethod === 'Cash') {
@@ -40,7 +40,7 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
     useEffect(() => {
         if (usePoints && customer) {
             // By default try to redeem as much as possible to cover the total
-            const suggestedPoints = Math.min(customer.loyaltyPoints, Math.ceil(total / 100));
+            const suggestedPoints = Math.min(customer.loyaltyPoints, Math.ceil(total));
             setPointsToRedeem(suggestedPoints);
         } else {
             setPointsToRedeem(0);
@@ -139,7 +139,7 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
                                     </IconButton>
                                 </Box>
                                 <Typography variant="body2" sx={{ color: '#10b981' }}>
-                                    - LKR {(pointsToRedeem * 100).toFixed(2)}
+                                    - LKR {(pointsToRedeem * 1).toFixed(2)}
                                 </Typography>
                             </Box>
                         )}

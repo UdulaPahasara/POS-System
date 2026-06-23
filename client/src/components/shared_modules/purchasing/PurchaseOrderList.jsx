@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { 
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, Button, IconButton,
-    Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem
+    Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Fade
 } from '@mui/material';
 import { Add, Close as CloseIcon, ViewCarousel, TableRows } from '@mui/icons-material';
 import { useNotifications } from '../../../context/NotificationContext';
@@ -228,7 +228,7 @@ const PurchaseOrderList = () => {
                     <Typography variant="subtitle1" sx={{ color: '#f59e0b', fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                         ⚠️ Low Stock Suggestions (Needs Reordering)
                     </Typography>
-                    <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 1, '&::-webkit-scrollbar': { height: 6, bgcolor: 'rgba(255,255,255,0.05)' }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(245, 158, 11, 0.5)', borderRadius: 3 } }}>
+                    <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', overflowY: 'hidden', pb: 2, pt: 1, '&::-webkit-scrollbar': { height: 6, bgcolor: 'rgba(255,255,255,0.05)' }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(245, 158, 11, 0.5)', borderRadius: 3 } }}>
                         {products.filter(p => p.stock <= p.reorderLevel).map((p, index) => (
                             <Paper 
                                 key={p._id}
@@ -276,8 +276,8 @@ const PurchaseOrderList = () => {
             )}
 
             <TableContainer component={Paper} sx={{ 
-                bgcolor: '#1e293b', overflowX: 'hidden',
-                animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both`,
+                bgcolor: '#1e293b', overflowX: 'hidden', borderRadius: 2, border: '1px solid rgba(255,255,255,0.05)',
+                animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
                 '@keyframes slideUp': {
                     '0%': { opacity: 0, transform: 'translateY(30px)' },
                     '100%': { opacity: 1, transform: 'translateY(0)' }
@@ -297,11 +297,11 @@ const PurchaseOrderList = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {pos.map((po) => {
+                        {pos.map((po, index) => {
                             const { name, category } = getProductDisplayInfo(po.items);
                             return (
+                            <Fade in={true} timeout={500} style={{ transitionDelay: `${index * 150}ms` }} key={po._id}>
                             <TableRow 
-                                key={po._id} 
                                 id={`po-row-${po._id}`}
                                 sx={{ 
                                     '&:hover': { 
@@ -336,6 +336,7 @@ const PurchaseOrderList = () => {
                                     </Box>
                                 </TableCell>
                             </TableRow>
+                            </Fade>
                             );
                         })}
                     </TableBody>

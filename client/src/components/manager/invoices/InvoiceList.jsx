@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, CircularProgress,
-    Button, Dialog, DialogContent, IconButton, Divider
+    Button, Dialog, DialogContent, IconButton, Divider, Fade
 } from '@mui/material';
 import { Description as InvoiceIcon, ReceiptLong as ReceiptIcon, Close as CloseIcon } from '@mui/icons-material';
 import { invoiceApi } from '../../../services/invoiceApi';
@@ -75,48 +75,49 @@ const InvoiceList = () => {
                                 <TableCell colSpan={4} align="center" sx={{ color: '#94a3b8', py: 4 }}>No invoices found.</TableCell>
                             </TableRow>
                         ) : (
-                            invoices.map((inv) => (
-                                <TableRow 
-                                    key={inv._id}
-                                    sx={{ 
-                                        '&:hover': { 
-                                            bgcolor: 'rgba(255, 255, 255, 0.04)',
-                                            transform: 'translateY(-2px)',
-                                            boxShadow: '0 8px 25px -5px rgba(0,0,0,0.5)',
-                                            zIndex: 10,
-                                            position: 'relative'
-                                        },
-                                        transition: 'all 0.2s ease-in-out'
-                                    }}
-                                >
-                                    <TableCell sx={{ color: '#fff', fontWeight: 600 }}>{inv.invoiceNumber}</TableCell>
-                                    <TableCell sx={{ color: '#fff' }}>{new Date(inv.issueDate).toLocaleString()}</TableCell>
-                                    <TableCell sx={{ color: '#8b5cf6', fontWeight: 700 }}>LKR {inv.total?.toFixed(2)}</TableCell>
-                                    <TableCell align="right">
-                                        <Button 
-                                            variant="contained" 
-                                            size="small"
-                                            startIcon={<ReceiptIcon />}
-                                            onClick={() => handleViewReceipt(inv)}
-                                            sx={{ 
-                                                bgcolor: 'rgba(139, 92, 246, 0.1)', 
-                                                color: '#c4b5fd',
-                                                border: '1px solid rgba(139, 92, 246, 0.3)',
-                                                borderRadius: 2,
-                                                textTransform: 'none',
-                                                '&:hover': {
-                                                    bgcolor: '#8b5cf6',
-                                                    color: '#fff',
-                                                    boxShadow: '0 4px 12px rgba(139, 92, 246, 0.4)',
-                                                    transform: 'translateY(-1px)'
-                                                },
-                                                transition: 'all 0.2s'
-                                            }}
-                                        >
-                                            View
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
+                            invoices.map((inv, index) => (
+                                <Fade in={true} timeout={500} style={{ transitionDelay: `${index * 150}ms` }} key={inv._id}>
+                                    <TableRow 
+                                        sx={{ 
+                                            '&:hover': { 
+                                                bgcolor: 'rgba(255, 255, 255, 0.04)',
+                                                transform: 'translateY(-2px)',
+                                                boxShadow: '0 8px 25px -5px rgba(0,0,0,0.5)',
+                                                zIndex: 10,
+                                                position: 'relative'
+                                            },
+                                            transition: 'all 0.2s ease-in-out'
+                                        }}
+                                    >
+                                        <TableCell sx={{ color: '#fff', fontWeight: 600 }}>{inv.invoiceNumber}</TableCell>
+                                        <TableCell sx={{ color: '#fff' }}>{new Date(inv.issueDate).toLocaleString()}</TableCell>
+                                        <TableCell sx={{ color: '#8b5cf6', fontWeight: 700 }}>LKR {inv.total?.toFixed(2)}</TableCell>
+                                        <TableCell align="right">
+                                            <Button 
+                                                variant="contained" 
+                                                size="small"
+                                                startIcon={<ReceiptIcon />}
+                                                onClick={() => handleViewReceipt(inv)}
+                                                sx={{ 
+                                                    bgcolor: 'rgba(139, 92, 246, 0.1)', 
+                                                    color: '#c4b5fd',
+                                                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                                                    borderRadius: 2,
+                                                    textTransform: 'none',
+                                                    '&:hover': {
+                                                        bgcolor: '#8b5cf6',
+                                                        color: '#fff',
+                                                        boxShadow: '0 4px 12px rgba(139, 92, 246, 0.4)',
+                                                        transform: 'translateY(-1px)'
+                                                    },
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                View
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                </Fade>
                             ))
                         )}
                     </TableBody>
@@ -228,7 +229,7 @@ const InvoiceList = () => {
                             {selectedInvoice.sale?.pointsRedeemed > 0 && (
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>Points Discount:</Typography>
-                                    <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>-{(selectedInvoice.sale?.pointsRedeemed * 100).toFixed(2)}</Typography>
+                                    <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>-{(selectedInvoice.sale?.subtotal + selectedInvoice.sale?.tax - selectedInvoice.sale?.total).toFixed(2)}</Typography>
                                 </Box>
                             )}
 

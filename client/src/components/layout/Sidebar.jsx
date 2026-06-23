@@ -89,7 +89,7 @@ const AdminSidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
 
             <List sx={{ px: 2, flexGrow: 1, mt: 2 }}>
                 {navItems.map((item) => {
-                    const isActive = location.pathname.includes(item.path);
+                    const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
                     return (
                         <ListItemButton 
                             key={item.title}

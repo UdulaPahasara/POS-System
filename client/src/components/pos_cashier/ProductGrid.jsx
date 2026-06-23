@@ -58,7 +58,7 @@ const ProductGrid = ({ products, onAddToCart, customerSelectorNode }) => {
             )}
 
             {/* Category Chips */}
-            <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', mb: 3, pb: 1, '&::-webkit-scrollbar': { height: 6 } }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3, pb: 1 }}>
                 {categories.map(cat => (
                     <Chip
                         key={cat}
@@ -81,7 +81,13 @@ const ProductGrid = ({ products, onAddToCart, customerSelectorNode }) => {
             </Box>
 
             {/* Product Cards */}
-            <Grid container spacing={2} sx={{ overflowY: 'auto', pr: 1 }}>
+            <Grid container spacing={2} sx={{ 
+                overflowY: 'auto', 
+                pr: 1,
+                '&::-webkit-scrollbar': { display: 'none' },
+                msOverflowStyle: 'none',
+                scrollbarWidth: 'none',
+            }}>
                 {filteredProducts.map(product => (
                     <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
                         <Card 

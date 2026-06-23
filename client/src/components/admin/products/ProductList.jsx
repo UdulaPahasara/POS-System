@@ -5,7 +5,7 @@ import {
     TableContainer, TableHead, TableRow, IconButton, Button,
     Chip, InputAdornment, TextField, Avatar, Grid,
     Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
-    Snackbar, Alert
+    Snackbar, Alert, Fade
 } from '@mui/material';
 import { 
     Edit as EditIcon, 
@@ -366,7 +366,14 @@ const ProductList = () => {
                 </Box>
             </Paper>
 
-            <TableContainer component={Paper} sx={{ bgcolor: '#1e293b', borderRadius: 2 }}>
+            <TableContainer component={Paper} sx={{ 
+                bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2,
+                animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
+                '@keyframes slideUp': {
+                    '0%': { opacity: 0, transform: 'translateY(30px)' },
+                    '100%': { opacity: 1, transform: 'translateY(0)' }
+                }
+            }}>
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -380,16 +387,22 @@ const ProductList = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {filteredProducts.map((product) => (
-                            <TableRow 
-                                key={product._id} 
-                                id={`product-row-${product._id}`}
-                                sx={{ 
-                                    '&:hover': { bgcolor: 'rgba(255,255,255,0.02)' },
-                                    bgcolor: highlightedProductId === product._id ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                                    transition: 'background-color 0.5s ease'
-                                }}
-                            >
+                        {filteredProducts.map((product, index) => (
+                            <Fade in={true} timeout={500} style={{ transitionDelay: `${index * 150}ms` }} key={product._id}>
+                                <TableRow 
+                                    id={`product-row-${product._id}`}
+                                    sx={{ 
+                                        '&:hover': { 
+                                            bgcolor: 'rgba(255, 255, 255, 0.04)',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 8px 25px -5px rgba(0,0,0,0.5)',
+                                            zIndex: 10,
+                                            position: 'relative'
+                                        },
+                                        bgcolor: highlightedProductId === product._id ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                                        transition: 'all 0.2s ease-in-out'
+                                    }}
+                                >
                                 <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <Avatar 
                                         src={product.imageUrl ? `http://localhost:5000${product.imageUrl}` : undefined} 
@@ -426,7 +439,8 @@ const ProductList = () => {
                                         <DeleteIcon fontSize="small" />
                                     </IconButton>
                                 </TableCell>
-                            </TableRow>
+                                </TableRow>
+                            </Fade>
                         ))}
                     </TableBody>
                 </Table>

@@ -303,9 +303,37 @@ const POSLayout = () => {
                         POS System
                     </Typography>
                     
+                    {/* Barcode Scanner Actions */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', mr: 3, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
+                        <TextField 
+                            variant="outlined" 
+                            size="small" 
+                            placeholder="Scan or type barcode"
+                            value={manualBarcode}
+                            onChange={(e) => setManualBarcode(e.target.value)}
+                            onKeyDown={handleManualBarcodeEnter}
+                            sx={{
+                                width: '200px',
+                                '& .MuiOutlinedInput-root': {
+                                    color: '#fff',
+                                    '& fieldset': { border: 'none' }
+                                }
+                            }}
+                        />
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            size="small"
+                            onClick={() => setScannerOpen(true)}
+                            sx={{ minWidth: '40px', p: 1, borderRadius: '0 4px 4px 0' }}
+                        >
+                            <QrCodeScannerIcon fontSize="small" />
+                        </Button>
+                    </Box>
+
                     {/* User Profile Dropdown */}
                     <Box 
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 3, cursor: 'pointer', p: 0.5, borderRadius: 1, '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', p: 0.5, borderRadius: 1, '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
                         onClick={(e) => setProfileAnchorEl(e.currentTarget)}
                     >
                         <Avatar 
@@ -351,50 +379,17 @@ const POSLayout = () => {
                             Logout
                         </MenuItem>
                     </Menu>
-                    
-                    {/* Barcode Scanner Actions */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', mr: 2, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
-                        <TextField 
-                            variant="outlined" 
-                            size="small" 
-                            placeholder="Scan or type barcode"
-                            value={manualBarcode}
-                            onChange={(e) => setManualBarcode(e.target.value)}
-                            onKeyDown={handleManualBarcodeEnter}
-                            sx={{
-                                width: '200px',
-                                '& .MuiOutlinedInput-root': {
-                                    color: '#fff',
-                                    '& fieldset': { border: 'none' }
-                                }
-                            }}
-                        />
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            size="small"
-                            onClick={() => setScannerOpen(true)}
-                            sx={{ minWidth: '40px', p: 1, borderRadius: '0 4px 4px 0' }}
-                        >
-                            <QrCodeScannerIcon fontSize="small" />
-                        </Button>
-                    </Box>
-
-                    {/* Logout */}
-                    <Button 
-                        variant="outlined" 
-                        color="error" 
-                        size="small"
-                        onClick={handleLogoutClick}
-                        startIcon={<LogoutIcon />}
-                        sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600 }}
-                    >
-                        Logout
-                    </Button>
                 </Box>
                 
                 {/* Main Product Area */}
-                <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+                <Box sx={{ 
+                    flex: 1, 
+                    overflow: 'auto', 
+                    p: 3,
+                    '&::-webkit-scrollbar': { display: 'none' },
+                    msOverflowStyle: 'none',
+                    scrollbarWidth: 'none',
+                }}>
                     <ProductGrid 
                         products={products} 
                         onAddToCart={(prod) => addToCart(prod)} 
@@ -511,7 +506,7 @@ const POSLayout = () => {
                                     date: new Date(saleData.date).toLocaleString(),
                                     subtotal: saleData.subtotal.toFixed(2),
                                     tax: saleData.tax.toFixed(2),
-                                    points_discount: (saleData.pointsRedeemed * 100).toFixed(2),
+                                    points_discount: (saleData.subtotal + saleData.tax - saleData.total).toFixed(2),
                                     total: saleData.total.toFixed(2),
                                     employee_name: saleData.employeeName,
                                     items_html: itemsHtml
@@ -577,30 +572,57 @@ const POSLayout = () => {
                 maxWidth="sm"
                 fullWidth
                 PaperProps={{
-                    sx: { bgcolor: '#1e293b', color: '#fff', borderRadius: 2, border: '1px solid rgba(255,255,255,0.1)' }
+                    sx: { bgcolor: '#ffffff', color: '#0f172a', borderRadius: 3, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }
                 }}
             >
-                <DialogTitle sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 600 }}>Held Carts</DialogTitle>
-                <DialogContent sx={{ pt: 3, pb: 3, minHeight: '200px' }}>
+                <DialogTitle sx={{ borderBottom: '1px solid #e2e8f0', fontWeight: 700, bgcolor: '#f8fafc', py: 2 }}>Held Carts</DialogTitle>
+                <DialogContent sx={{ pt: 3, pb: 3, minHeight: '200px', bgcolor: '#ffffff' }}>
                     {heldCarts.length === 0 ? (
-                        <Typography sx={{ color: '#94a3b8', textAlign: 'center', mt: 4 }}>No held carts available.</Typography>
+                        <Box sx={{ textAlign: 'center', mt: 4 }}>
+                            <Typography sx={{ color: '#64748b', fontSize: '1.1rem' }}>No held carts available.</Typography>
+                        </Box>
                     ) : (
-                        heldCarts.map(cart => (
-                            <Box key={cart.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, mb: 1, bgcolor: 'rgba(255,255,255,0.02)', borderRadius: 2, border: '1px solid rgba(255,255,255,0.05)' }}>
-                                <Box>
-                                    <Typography sx={{ color: '#fff', fontWeight: 600 }}>{cart.name}</Typography>
-                                    <Typography variant="caption" sx={{ color: '#94a3b8' }}>{new Date(cart.timestamp).toLocaleTimeString()} - Total: LKR {cart.items.reduce((sum, item) => sum + (getDiscountedPrice(item.product) * item.quantity), 0).toFixed(2)}</Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                            {heldCarts.map(cart => (
+                                <Box key={cart.id} sx={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'center', 
+                                    p: 2.5, 
+                                    bgcolor: '#f8fafc', 
+                                    borderRadius: 3, 
+                                    border: '1px solid #e2e8f0',
+                                    transition: 'all 0.2s',
+                                    '&:hover': {
+                                        borderColor: '#cbd5e1',
+                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                        transform: 'translateY(-2px)'
+                                    }
+                                }}>
+                                    <Box>
+                                        <Typography sx={{ color: '#0f172a', fontWeight: 700, fontSize: '1.1rem', mb: 0.5 }}>{cart.name}</Typography>
+                                        <Typography variant="body2" sx={{ color: '#64748b', mb: 0.5 }}>
+                                            {new Date(cart.timestamp).toLocaleTimeString()}
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 800 }}>
+                                            Total: LKR {cart.items.reduce((sum, item) => sum + (getDiscountedPrice(item.product) * item.quantity), 0).toFixed(2)}
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                        <Button size="small" variant="contained" color="success" onClick={() => restoreHeldCart(cart)} sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2, boxShadow: 'none' }}>
+                                            Restore
+                                        </Button>
+                                        <Button size="small" variant="outlined" color="error" onClick={() => deleteHeldCart(cart.id)} sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}>
+                                            Delete
+                                        </Button>
+                                    </Box>
                                 </Box>
-                                <Box sx={{ display: 'flex', gap: 1 }}>
-                                    <Button size="small" variant="outlined" color="info" onClick={() => restoreHeldCart(cart)} sx={{ textTransform: 'none' }}>Restore</Button>
-                                    <Button size="small" variant="outlined" color="error" onClick={() => deleteHeldCart(cart.id)} sx={{ textTransform: 'none' }}>Delete</Button>
-                                </Box>
-                            </Box>
-                        ))
+                            ))}
+                        </Box>
                     )}
                 </DialogContent>
-                <DialogActions sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    <Button onClick={() => setHeldCartsDialogOpen(false)} sx={{ color: '#94a3b8' }}>Close</Button>
+                <DialogActions sx={{ p: 2, borderTop: '1px solid #e2e8f0', bgcolor: '#f8fafc' }}>
+                    <Button onClick={() => setHeldCartsDialogOpen(false)} sx={{ color: '#64748b', fontWeight: 600, textTransform: 'none' }}>Close</Button>
                 </DialogActions>
             </Dialog>
 

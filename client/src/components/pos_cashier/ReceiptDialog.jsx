@@ -124,7 +124,7 @@ const ReceiptDialog = ({ open, onClose, sale }) => {
                     {pointsRedeemed > 0 && (
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', color: '#f59e0b', mb: 0.5 }}>
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>Points Discount</Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>-LKR {(pointsRedeemed * 100).toFixed(2)}</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>-LKR {(subtotal + tax - total).toFixed(2)}</Typography>
                         </Box>
                     )}
                     {totalDiscount > 0 && (

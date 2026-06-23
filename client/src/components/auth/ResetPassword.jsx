@@ -22,7 +22,7 @@ const ResetPassword = () => {
     const navigate = useNavigate();
     const { token } = useParams();
 
-    const [showPassword, setShowPassword] = useState(false);
+    const [showPassword, setShowPassword] = useState({ new: false, confirm: false });
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
     
@@ -74,7 +74,9 @@ const ResetPassword = () => {
         }
     };
 
-    const handleClickShowPassword = () => setShowPassword((show) => !show);
+    const handleClickShowPassword = (field) => {
+        setShowPassword(prev => ({ ...prev, [field]: !prev[field] }));
+    };
 
     return (
         <Box 
@@ -138,7 +140,7 @@ const ResetPassword = () => {
                     <TextField
                         fullWidth
                         name="password"
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword.new ? 'text' : 'password'}
                         placeholder="New Password"
                         variant="outlined"
                         value={formData.password}
@@ -158,30 +160,33 @@ const ResetPassword = () => {
                                 opacity: 1,
                             }
                         }}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <LockIcon sx={{ color: '#64748b' }} />
-                                </InputAdornment>
-                            ),
-                            endAdornment: (
-                                <InputAdornment position="end">
-                                    <IconButton
-                                        onClick={handleClickShowPassword}
-                                        edge="end"
-                                        sx={{ color: '#64748b' }}
-                                    >
-                                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                                    </IconButton>
-                                </InputAdornment>
-                            )
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <LockIcon sx={{ color: '#64748b' }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            onClick={() => handleClickShowPassword('new')}
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            edge="end"
+                                            sx={{ color: '#64748b' }}
+                                        >
+                                            {showPassword.new ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            }
                         }}
                     />
 
                     <TextField
                         fullWidth
                         name="confirmPassword"
-                        type={showPassword ? 'text' : 'password'}
+                        type={showPassword.confirm ? 'text' : 'password'}
                         placeholder="Confirm New Password"
                         variant="outlined"
                         value={formData.confirmPassword}
@@ -201,12 +206,26 @@ const ResetPassword = () => {
                                 opacity: 1,
                             }
                         }}
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <LockIcon sx={{ color: '#64748b' }} />
-                                </InputAdornment>
-                            )
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <LockIcon sx={{ color: '#64748b' }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            onClick={() => handleClickShowPassword('confirm')}
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            edge="end"
+                                            sx={{ color: '#64748b' }}
+                                        >
+                                            {showPassword.confirm ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            }
                         }}
                     />
 

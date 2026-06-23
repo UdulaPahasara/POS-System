@@ -129,7 +129,7 @@ export const createSale = async (req, res) => {
                 if (pointsToRedeem > currentPoints) {
                     return res.status(400).json({ message: 'Not enough loyalty points' });
                 }
-                const discountAmount = pointsToRedeem * 100;
+                const discountAmount = pointsToRedeem;
                 finalTotal = Math.max(0, total - discountAmount);
             } else {
                 pointsToRedeem = 0; // Invalid customer ID
@@ -208,6 +208,7 @@ export const createSale = async (req, res) => {
             // Update customer balance
             const currentPoints = customerRecord.loyaltyPoints || 0;
             customerRecord.loyaltyPoints = currentPoints - pointsToRedeem + pointsEarned;
+            customerRecord.totalRedeemedPoints = (customerRecord.totalRedeemedPoints || 0) + pointsToRedeem;
             await customerRecord.save();
         }
 
@@ -247,5 +248,44 @@ export const getSales = async (req, res) => {
     } catch (error) {
         console.error('Error fetching sales:', error);
         res.status(500).json({ message: 'Server error fetching sales' });
+    }
+};
+
+// @desc    Get sales by customer ID
+// @route   GET /api/sales/customer/:customerId
+// @access  Private (Admin/Manager/Cashier)
+export const getSalesByCustomer = async (req, res) => {
+    try {
+        const customerId = req.params.customerId;
+        
+        const mongoose = await import('mongoose');
+        const Customer = mongoose.model('Customer');
+        const customer = await Customer.findById(customerId);
+
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        const sales = await Sale.find({ 'customer.phone': customer.phone })
+            .populate('cashier', 'name username email')
+            .populate('items.product', 'name category')
+            .populate('payments')
+            .sort({ createdAt: -1 });
+
+        // Format sales to include invoice numbers
+        const Invoice = mongoose.model('Invoice');
+        const formattedSales = await Promise.all(sales.map(async (sale) => {
+            const invoice = await Invoice.findOne({ sale: sale._id });
+            return {
+                ...sale.toObject(),
+                invoiceNumber: invoice ? invoice.invoiceNumber : 'N/A',
+                issueDate: invoice ? invoice.issueDate : sale.createdAt
+            };
+        }));
+
+        res.json(formattedSales);
+    } catch (error) {
+        console.error('Error fetching customer sales:', error);
+        res.status(500).json({ message: 'Server error fetching customer sales' });
     }
 };
