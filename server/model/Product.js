@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const discountSchema = new mongoose.Schema({
-    type: { type: String, enum: ['percentage','fixed'], default: 'fixed' },
+    type: { type: String, enum: ['percentage','fixed', 'none'], default: 'none' },
     amount: { type: Number, default: 0 }
 }, { _id: false });
 
@@ -51,7 +51,7 @@ const productSchema = new mongoose.Schema({
     },
     discount: {
         type: discountSchema,
-        default: () => ({ type: 'fixed', amount: 0 })
+        default: () => ({ type: 'none', amount: 0 })
     },
     stock: {
         type: Number,

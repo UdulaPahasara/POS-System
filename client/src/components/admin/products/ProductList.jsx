@@ -49,7 +49,7 @@ const ProductList = () => {
     const defaultForm = {
         name: '', sku: '', barcodeValue: '', brand: '', category: '',
         costPrice: '', sellingPrice: '', reorderLevel: '', description: '', image: '',
-        discountType: 'fixed', discountAmount: 0
+        discountType: 'none', discountAmount: 0
     };
     const [formData, setFormData] = useState(defaultForm);
 
@@ -123,7 +123,7 @@ const ProductList = () => {
         setFormData({
             ...product,
             category: product.category?._id || product.category || '',
-            discountType: product.discount?.type || 'fixed',
+            discountType: product.discount?.type || 'none',
             discountAmount: product.discount?.amount || 0
         });
         setDialogOpen(true);

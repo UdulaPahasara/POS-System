@@ -32,8 +32,8 @@ export const createProduct = async (req, res) => {
             stock: req.body.stock || 0,
             imageUrl,
             discount: {
-                type: req.body.discountType || 'fixed',
-                amount: req.body.discountAmount || 0
+                type: req.body.discountType || 'none',
+                amount: (req.body.discountType === 'none') ? 0 : (req.body.discountAmount || 0)
             }
         });
 
@@ -124,9 +124,13 @@ export const updateProduct = async (req, res) => {
 
         // Update discount fields
         if (req.body.discountType || req.body.discountAmount !== undefined) {
+            let discType = req.body.discountType || (product.discount?.type || 'none');
+            let discAmt = req.body.discountAmount !== undefined ? Number(req.body.discountAmount) : (product.discount?.amount || 0);
+            if (discType === 'none') discAmt = 0;
+            
             product.discount = {
-                type: req.body.discountType || (product.discount?.type || 'fixed'),
-                amount: req.body.discountAmount !== undefined ? Number(req.body.discountAmount) : (product.discount?.amount || 0)
+                type: discType,
+                amount: discAmt
             };
         }
 

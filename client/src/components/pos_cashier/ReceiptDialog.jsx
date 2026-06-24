@@ -116,6 +116,13 @@ const ReceiptDialog = ({ open, onClose, sale }) => {
                         <Typography sx={{ color: '#0f172a', fontWeight: 600 }}>LKR {tax.toFixed(2)}</Typography>
                     </Box>
                     
+                    {sale?.orderDiscountAmount > 0 && (
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, color: '#10b981' }}>
+                            <Typography sx={{ fontWeight: 600 }}>Order Discount ({sale?.orderDiscountPercent}%)</Typography>
+                            <Typography sx={{ fontWeight: 600 }}>-LKR {sale.orderDiscountAmount.toFixed(2)}</Typography>
+                        </Box>
+                    )}
+                    
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: '#f1f5f9', borderRadius: 2, mb: 2, border: '1px solid #e2e8f0' }}>
                         <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 800 }}>Total</Typography>
                         <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 800 }}>LKR {total.toFixed(2)}</Typography>
@@ -173,7 +180,7 @@ const ReceiptDialog = ({ open, onClose, sale }) => {
                     <Typography variant="body2" sx={{ color: '#64748b' }}>Please come again.</Typography>
                 </Box>
             </DialogContent>
-            <DialogActions sx={{ p: 2, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+            <DialogActions className="hide-on-print" sx={{ p: 2, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
                 <Button onClick={onClose} sx={{ color: '#64748b', fontWeight: 600, textTransform: 'none', mr: 1 }}>
                     Close
                 </Button>

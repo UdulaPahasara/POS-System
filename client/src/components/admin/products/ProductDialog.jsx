@@ -211,41 +211,44 @@ const ProductDialog = ({ open, handleClose, formData, setFormData, handleSubmit,
                                         variant="outlined"
                                         sx={inputStyles}
                                     >
+                                        <MenuItem value="none">None</MenuItem>
                                         <MenuItem value="fixed">Fixed Amount</MenuItem>
                                         <MenuItem value="percentage">Percentage</MenuItem>
                                     </TextField>
                                 </Grid>
                                 {/* Discount Amount */}
-                                <Grid item xs={12} sm={4}>
-                                    <Box sx={{ position: 'relative', width: '100%' }}>
-                                        <TextField
-                                            key={`discount-field-${formData.discountType || 'fixed'}`}
-                                            fullWidth
-                                            label={formData.discountType === 'percentage' ? 'Discount Percentage' : 'Discount Amount'}
-                                            name="discountAmount"
-                                            type="number"
-                                            value={formData.discountAmount === 0 ? '' : (formData.discountAmount !== undefined ? formData.discountAmount : '')}
-                                            onChange={handleChange}
-                                            variant="outlined"
-                                            sx={{ 
-                                                ...inputStyles,
-                                                '& input': { pr: formData.discountType === 'percentage' ? '30px' : undefined }
-                                            }}
-                                            InputProps={{
-                                                startAdornment: formData.discountType !== 'percentage' ? (
-                                                    <InputAdornment position="start">
-                                                        <Typography sx={{color:'#94a3b8'}}>LKR </Typography>
-                                                    </InputAdornment>
-                                                ) : null
-                                            }}
-                                        />
-                                        {formData.discountType === 'percentage' && (
-                                            <Box sx={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
-                                                <Typography sx={{ color: '#94a3b8', fontSize: '1rem' }}>%</Typography>
-                                            </Box>
-                                        )}
-                                    </Box>
-                                </Grid>
+                                {formData.discountType !== 'none' && (
+                                    <Grid item xs={12} sm={4}>
+                                        <Box sx={{ position: 'relative', width: '100%' }}>
+                                            <TextField
+                                                key={`discount-field-${formData.discountType || 'none'}`}
+                                                fullWidth
+                                                label={formData.discountType === 'percentage' ? 'Discount Percentage' : 'Discount Amount'}
+                                                name="discountAmount"
+                                                type="number"
+                                                value={formData.discountAmount === 0 ? '' : (formData.discountAmount !== undefined ? formData.discountAmount : '')}
+                                                onChange={handleChange}
+                                                variant="outlined"
+                                                sx={{ 
+                                                    ...inputStyles,
+                                                    '& input': { pr: formData.discountType === 'percentage' ? '30px' : undefined }
+                                                }}
+                                                InputProps={{
+                                                    startAdornment: formData.discountType !== 'percentage' ? (
+                                                        <InputAdornment position="start">
+                                                            <Typography sx={{color:'#94a3b8'}}>LKR </Typography>
+                                                        </InputAdornment>
+                                                    ) : null
+                                                }}
+                                            />
+                                            {formData.discountType === 'percentage' && (
+                                                <Box sx={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+                                                    <Typography sx={{ color: '#94a3b8', fontSize: '1rem' }}>%</Typography>
+                                                </Box>
+                                            )}
+                                        </Box>
+                                    </Grid>
+                                )}
                             </Grid>
                         </Grid>
                     </Grid>

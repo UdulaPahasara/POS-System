@@ -242,6 +242,15 @@ const InvoiceList = () => {
                                     </Typography>
                                 </Box>
                             )}
+
+                            {selectedInvoice.sale?.orderDiscountAmount > 0 && (
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>Order Discount ({selectedInvoice.sale?.orderDiscountPercent}%):</Typography>
+                                    <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>
+                                        -{selectedInvoice.sale?.orderDiscountAmount.toFixed(2)}
+                                    </Typography>
+                                </Box>
+                            )}
                             
                             {selectedInvoice.sale?.pointsRedeemed > 0 && (
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>

@@ -14,7 +14,7 @@ import Notification from '../model/Notification.js';
 // @access  Private (Admin/Cashier)
 export const createSale = async (req, res) => {
     try {
-        const { cartItems, paymentMethod, amountPaid, customer: customerData, pointsRedeemed = 0 } = req.body;
+        const { cartItems, paymentMethod, amountPaid, customer: customerData, pointsRedeemed = 0, orderDiscountPercent = 0 } = req.body;
 
         if (!cartItems || cartItems.length === 0) {
             return res.status(400).json({ message: 'No items in cart' });
@@ -117,8 +117,12 @@ export const createSale = async (req, res) => {
         const tax = calculatedTax;
         const total = calculatedSubtotal + tax;
 
+        // Apply Order-Level Discount
+        const orderDiscountPercentNum = Number(orderDiscountPercent) || 0;
+        const orderDiscountAmount = total * (orderDiscountPercentNum / 100);
+        let finalTotal = Math.max(0, total - orderDiscountAmount);
+
         // Apply Loyalty Points Discount
-        let finalTotal = total;
         let pointsToRedeem = Number(pointsRedeemed);
         let customerRecord = null;
 
@@ -129,8 +133,8 @@ export const createSale = async (req, res) => {
                 if (pointsToRedeem > currentPoints) {
                     return res.status(400).json({ message: 'Not enough loyalty points' });
                 }
-                const discountAmount = pointsToRedeem;
-                finalTotal = Math.max(0, total - discountAmount);
+                const pointsDiscountAmount = pointsToRedeem;
+                finalTotal = Math.max(0, finalTotal - pointsDiscountAmount);
             } else {
                 pointsToRedeem = 0; // Invalid customer ID
             }
@@ -163,6 +167,8 @@ export const createSale = async (req, res) => {
             subtotal: calculatedSubtotal,
             tax,
             total: finalTotal,
+            orderDiscountPercent: orderDiscountPercentNum,
+            orderDiscountAmount: orderDiscountAmount,
             cashAmount,
             cardAmount,
             pointsEarned,

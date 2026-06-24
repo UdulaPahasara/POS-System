@@ -449,14 +449,15 @@ const POSLayout = () => {
                 onClose={() => setCheckoutOpen(false)}
                 total={total}
                 customer={selectedCustomer}
-                onComplete={async ({ paymentMethod, amountPaid, pointsRedeemed }) => {
+                onComplete={async ({ paymentMethod, amountPaid, pointsRedeemed, orderDiscountPercent }) => {
                     try {
                         const data = await posApi.submitSale({
                             cartItems,
                             customer: selectedCustomer,
                             paymentMethod,
                             amountPaid,
-                            pointsRedeemed
+                            pointsRedeemed,
+                            orderDiscountPercent
                         });
                             
                             // Map backend data to frontend receipt format
@@ -484,18 +485,43 @@ const POSLayout = () => {
                             if (saleData.customer && saleData.customer.email) {
                                 const itemsHtml = saleData.cartItems.map(item => {
                                     const hasDiscount = item.product.discount && item.product.discount.amount > 0;
-                                    const priceText = hasDiscount ? `(Discounted)` : '';
+                                    const discountAmount = hasDiscount ? (item.product.discount.type === 'percentage' ? (item.product.sellingPrice * (item.product.discount.amount / 100)) : item.product.discount.amount) : 0;
+                                    const discountHtml = hasDiscount ? `
+                                        <tr>
+                                            <td colspan="2" style="padding: 0 10px 10px 10px; border-bottom: 1px dashed #e2e8f0; color: #ef4444; font-size: 13px;">
+                                                <span style="border-left: 2px solid #ef4444; padding-left: 8px;">Discount (LKR ${item.product.discount.amount}${item.product.discount.type === 'percentage' ? '%' : ''})</span>
+                                                <span style="float: right;">-LKR ${discountAmount.toFixed(2)}</span>
+                                            </td>
+                                        </tr>` : `<tr><td colspan="2" style="border-bottom: 1px dashed #e2e8f0;"></td></tr>`;
+
                                     return `
                                     <tr>
-                                        <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                                            ${item.product.name} x ${item.quantity} ${priceText}
+                                        <td style="padding: 10px 10px 4px 10px; font-weight: 600; color: #0f172a;">
+                                            ${item.product.name}<br/>
+                                            <span style="font-weight: normal; color: #64748b; font-size: 13px;">${item.quantity} x LKR ${item.product.sellingPrice.toFixed(2)}</span>
                                         </td>
-                                        <td style="padding: 10px; text-align: right; border-bottom: 1px solid #eee;">
+                                        <td style="padding: 10px 10px 4px 10px; text-align: right; font-weight: 600; color: #0f172a; vertical-align: top;">
                                             LKR ${(item.product.sellingPrice * item.quantity).toFixed(2)}
                                         </td>
                                     </tr>
+                                    ${discountHtml}
                                     `;
                                 }).join('');
+
+                                const orderDiscountHtml = saleData.orderDiscountAmount > 0 ? `
+                                    <tr>
+                                        <td style="padding: 5px 0; color: #10b981;">Order Discount (${saleData.orderDiscountPercent}%)</td>
+                                        <td style="padding: 5px 0; text-align: right; color: #10b981; font-weight: 600;">-LKR ${saleData.orderDiscountAmount.toFixed(2)}</td>
+                                    </tr>
+                                ` : '';
+
+                                const pointsDiscountAmount = (saleData.subtotal + saleData.tax - (saleData.orderDiscountAmount || 0) - saleData.total).toFixed(2);
+                                const pointsDiscountHtml = saleData.pointsRedeemed > 0 ? `
+                                    <tr>
+                                        <td style="padding: 5px 0; color: #f59e0b;">Points Discount</td>
+                                        <td style="padding: 5px 0; text-align: right; color: #f59e0b; font-weight: 600;">-LKR ${pointsDiscountAmount}</td>
+                                    </tr>
+                                ` : '';
 
                                 const templateParams = {
                                     to_email: saleData.customer.email,
@@ -506,7 +532,8 @@ const POSLayout = () => {
                                     date: new Date(saleData.date).toLocaleString(),
                                     subtotal: saleData.subtotal.toFixed(2),
                                     tax: saleData.tax.toFixed(2),
-                                    points_discount: (saleData.subtotal + saleData.tax - saleData.total).toFixed(2),
+                                    order_discount_html: orderDiscountHtml,
+                                    points_discount_html: pointsDiscountHtml,
                                     total: saleData.total.toFixed(2),
                                     employee_name: saleData.employeeName,
                                     items_html: itemsHtml

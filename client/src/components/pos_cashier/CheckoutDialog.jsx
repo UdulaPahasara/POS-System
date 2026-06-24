@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Dialog, DialogTitle, DialogContent, DialogActions, 
-    Button, Typography, Box, TextField, Switch, FormControlLabel, IconButton
+    Button, Typography, Box, TextField, Switch, FormControlLabel, IconButton, Divider, InputAdornment
 } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 
 const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
     const [paymentMethod, setPaymentMethod] = useState('Cash');
@@ -13,6 +14,7 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
     const [change, setChange] = useState(0);
     const [usePoints, setUsePoints] = useState(false);
     const [pointsToRedeem, setPointsToRedeem] = useState(0);
+    const [discountPercent, setDiscountPercent] = useState(0);
 
     useEffect(() => {
         if (open) {
@@ -21,11 +23,14 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
             setChange(0);
             setUsePoints(false);
             setPointsToRedeem(0);
+            setDiscountPercent(0);
         }
     }, [open]);
 
-    // Calculate final total after points (1 point = 1 LKR discount)
-    const finalTotal = Number(Math.max(0, total - (usePoints ? pointsToRedeem : 0)).toFixed(2));
+    // Calculate final total after order discount and points (1 point = 1 LKR discount)
+    const orderDiscountAmount = total * ((parseFloat(discountPercent) || 0) / 100);
+    const discountedTotal = Math.max(0, total - orderDiscountAmount);
+    const finalTotal = Number(Math.max(0, discountedTotal - (usePoints ? pointsToRedeem : 0)).toFixed(2));
 
     useEffect(() => {
         if (paymentMethod === 'Cash') {
@@ -53,12 +58,14 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
         <Dialog 
             open={open} 
             onClose={onClose}
+            fullWidth
+            maxWidth="sm"
             sx={{
                 '& .MuiDialog-paper': {
                     bgcolor: '#0f172a',
                     color: '#fff',
                     borderRadius: 3,
-                    minWidth: '400px',
+                    minWidth: { xs: '90%', sm: '550px' },
                     border: '1px solid rgba(255,255,255,0.1)',
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
                 }
@@ -69,116 +76,144 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
             </DialogTitle>
             
             <DialogContent sx={{ pt: 3 }}>
-                {customer && (
-                    <Box sx={{ mb: 3, p: 2, bgcolor: 'rgba(245, 158, 11, 0.1)', borderRadius: 2, border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Box>
-                                <Typography sx={{ color: '#f59e0b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <StarIcon fontSize="small" /> Loyalty Program
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: '#94a3b8' }}>
-                                    Balance: <b>{customer.loyaltyPoints} Points</b>
-                                </Typography>
-                            </Box>
-                            <FormControlLabel
-                                control={
-                                    <Switch 
-                                        checked={usePoints} 
-                                        onChange={(e) => setUsePoints(e.target.checked)}
-                                        disabled={customer.loyaltyPoints <= 0}
-                                        color="warning"
-                                    />
-                                }
-                                label={<Typography variant="body2" sx={{ color: '#fff' }}>Redeem</Typography>}
-                                labelPlacement="start"
-                            />
-                        </Box>
-                        {usePoints && (
-                            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'rgba(0,0,0,0.2)', borderRadius: 1, border: '1px solid rgba(255,255,255,0.1)' }}>
-                                    <IconButton 
-                                        size="small" 
-                                        onClick={() => {
-                                            setPointsToRedeem(prev => Math.max(0, prev - 1));
-                                        }}
-                                        sx={{ color: '#fff' }}
-                                    >
-                                        <RemoveIcon fontSize="small" />
-                                    </IconButton>
-                                    <TextField
-                                        size="small"
-                                        type="number"
-                                        value={pointsToRedeem}
-                                        onChange={(e) => {
-                                            let val = parseInt(e.target.value) || 0;
-                                            val = Math.max(0, Math.min(val, customer.loyaltyPoints));
-                                            setPointsToRedeem(val);
-                                        }}
-                                        sx={{ 
-                                            width: '60px', 
-                                            input: { 
-                                                color: '#fff', textAlign: 'center', p: '8px',
-                                                '&::-webkit-outer-spin-button, &::-webkit-inner-spin-button': {
-                                                    display: 'none',
-                                                    WebkitAppearance: 'none',
-                                                    margin: 0
-                                                },
-                                                MozAppearance: 'textfield'
-                                            }, 
-                                            '& fieldset': { border: 'none' } 
-                                        }}
-                                    />
-                                    <IconButton 
-                                        size="small" 
-                                        onClick={() => {
-                                            setPointsToRedeem(prev => Math.min(customer.loyaltyPoints, prev + 1));
-                                        }}
-                                        sx={{ color: '#fff' }}
-                                    >
-                                        <AddIcon fontSize="small" />
-                                    </IconButton>
+                {/* Order Modifiers Grid */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: customer ? '1fr 1fr' : '1fr', gap: 2, mb: 3 }}>
+                    
+                    {customer && (
+                        <Box sx={{ p: 2, bgcolor: 'rgba(245, 158, 11, 0.05)', borderRadius: 2, border: '1px solid rgba(245, 158, 11, 0.2)', display: 'flex', flexDirection: 'column' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                <Box>
+                                    <Typography sx={{ color: '#f59e0b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.9rem' }}>
+                                        <StarIcon fontSize="small" /> Loyalty
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                                        Balance: <b>{customer.loyaltyPoints}</b>
+                                    </Typography>
                                 </Box>
-                                <Typography variant="body2" sx={{ color: '#10b981' }}>
-                                    - LKR {(pointsToRedeem * 1).toFixed(2)}
-                                </Typography>
+                                <Switch 
+                                    size="small"
+                                    checked={usePoints} 
+                                    onChange={(e) => setUsePoints(e.target.checked)}
+                                    disabled={customer.loyaltyPoints <= 0}
+                                    color="warning"
+                                />
                             </Box>
-                        )}
+                            {usePoints && (
+                                <Box sx={{ mt: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'rgba(0,0,0,0.2)', borderRadius: 1, border: '1px solid rgba(255,255,255,0.1)' }}>
+                                        <IconButton size="small" onClick={() => setPointsToRedeem(prev => Math.max(0, prev - 1))} sx={{ color: '#fff', p: 0.5 }}>
+                                            <RemoveIcon sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                        <Typography sx={{ color: '#fff', minWidth: '30px', textAlign: 'center', fontSize: '0.9rem' }}>{pointsToRedeem}</Typography>
+                                        <IconButton size="small" onClick={() => setPointsToRedeem(prev => Math.min(customer.loyaltyPoints, prev + 1))} sx={{ color: '#fff', p: 0.5 }}>
+                                            <AddIcon sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                    </Box>
+                                    <Typography variant="body2" sx={{ color: '#10b981', fontWeight: 600 }}>
+                                        -LKR {(pointsToRedeem * 1).toFixed(2)}
+                                    </Typography>
+                                </Box>
+                            )}
+                        </Box>
+                    )}
+
+                    {/* Special Discount Field */}
+                    <Box sx={{ p: 2, bgcolor: 'rgba(59, 130, 246, 0.05)', borderRadius: 2, border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', flexDirection: 'column' }}>
+                        <Typography sx={{ color: '#60a5fa', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.9rem', mb: 2 }}>
+                            <LocalOfferIcon fontSize="small" /> Discount
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto' }}>
+                            <TextField
+                                size="small"
+                                type="number"
+                                placeholder="0"
+                                value={discountPercent === 0 ? '' : discountPercent}
+                                onChange={(e) => setDiscountPercent(Math.max(0, Math.min(100, e.target.value)))}
+                                InputProps={{
+                                    endAdornment: <InputAdornment position="end"><Typography sx={{ color: '#94a3b8' }}>%</Typography></InputAdornment>,
+                                }}
+                                sx={{ 
+                                    width: '100px', 
+                                    '& .MuiOutlinedInput-root': {
+                                        color: '#fff',
+                                        bgcolor: 'rgba(0,0,0,0.2)',
+                                        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                                        '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
+                                        '&.Mui-focused fieldset': { borderColor: '#3b82f6' }
+                                    }
+                                }}
+                            />
+                            {orderDiscountAmount > 0 && (
+                                <Typography sx={{ color: '#10b981', fontWeight: 600, fontSize: '0.9rem' }}>
+                                    -LKR {orderDiscountAmount.toFixed(2)}
+                                </Typography>
+                            )}
+                        </Box>
                     </Box>
-                )}
+                </Box>
 
-                <Typography variant="h3" sx={{ textAlign: 'center', color: '#60a5fa', fontWeight: 800, mb: 4 }}>
-                    LKR {finalTotal.toFixed(2)}
-                </Typography>
+                {/* Order Summary Breakdown */}
+                <Box sx={{ bgcolor: '#1e293b', borderRadius: 2, p: 2, mb: 3, border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography sx={{ color: '#94a3b8', fontSize: '0.9rem' }}>Subtotal + Tax</Typography>
+                        <Typography sx={{ color: '#fff', fontSize: '0.9rem' }}>LKR {total.toFixed(2)}</Typography>
+                    </Box>
+                    
+                    {orderDiscountAmount > 0 && (
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography sx={{ color: '#10b981', fontSize: '0.9rem' }}>Order Discount ({discountPercent}%)</Typography>
+                            <Typography sx={{ color: '#10b981', fontSize: '0.9rem' }}>- LKR {orderDiscountAmount.toFixed(2)}</Typography>
+                        </Box>
+                    )}
+                    
+                    {usePoints && pointsToRedeem > 0 && (
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography sx={{ color: '#f59e0b', fontSize: '0.9rem' }}>Points Redeemed ({pointsToRedeem})</Typography>
+                            <Typography sx={{ color: '#f59e0b', fontSize: '0.9rem' }}>- LKR {(pointsToRedeem * 1).toFixed(2)}</Typography>
+                        </Box>
+                    )}
 
-                {/* Payment Method Selector */}
-                <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
+                    <Divider sx={{ my: 1.5, borderColor: 'rgba(255,255,255,0.1)', borderStyle: 'dashed' }} />
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="h6" sx={{ color: '#fff', fontWeight: 700 }}>Total Due</Typography>
+                        <Typography variant="h4" sx={{ color: '#3b82f6', fontWeight: 800 }}>
+                            LKR {finalTotal.toFixed(2)}
+                        </Typography>
+                    </Box>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 2, mb: 4, bgcolor: 'rgba(0,0,0,0.2)', p: 0.5, borderRadius: 2, border: '1px solid rgba(255,255,255,0.05)' }}>
                     <Button
-                        variant={paymentMethod === 'Cash' ? 'contained' : 'outlined'}
+                        variant={paymentMethod === 'Cash' ? 'contained' : 'text'}
                         onClick={() => setPaymentMethod('Cash')}
+                        disableElevation
                         sx={{ 
                             flex: 1, 
-                            py: 1.5,
+                            py: 1,
+                            borderRadius: 1.5,
                             bgcolor: paymentMethod === 'Cash' ? '#3b82f6' : 'transparent',
-                            borderColor: paymentMethod === 'Cash' ? '#3b82f6' : 'rgba(255,255,255,0.2)',
-                            color: '#fff',
+                            color: paymentMethod === 'Cash' ? '#fff' : '#94a3b8',
+                            fontWeight: 700,
                             '&:hover': { bgcolor: paymentMethod === 'Cash' ? '#2563eb' : 'rgba(255,255,255,0.05)' }
                         }}
                     >
-                        Cash
+                        CASH
                     </Button>
                     <Button
-                        variant={paymentMethod === 'Card' ? 'contained' : 'outlined'}
+                        variant={paymentMethod === 'Card' ? 'contained' : 'text'}
                         onClick={() => setPaymentMethod('Card')}
+                        disableElevation
                         sx={{ 
                             flex: 1, 
-                            py: 1.5,
+                            py: 1,
+                            borderRadius: 1.5,
                             bgcolor: paymentMethod === 'Card' ? '#3b82f6' : 'transparent',
-                            borderColor: paymentMethod === 'Card' ? '#3b82f6' : 'rgba(255,255,255,0.2)',
-                            color: '#fff',
+                            color: paymentMethod === 'Card' ? '#fff' : '#94a3b8',
+                            fontWeight: 700,
                             '&:hover': { bgcolor: paymentMethod === 'Card' ? '#2563eb' : 'rgba(255,255,255,0.05)' }
                         }}
                     >
-                        Card
+                        CARD
                     </Button>
                 </Box>
 
@@ -235,7 +270,12 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
                 <Button 
                     variant="contained" 
                     disabled={!isCompleteEnabled}
-                    onClick={() => onComplete({ paymentMethod, amountPaid: parseFloat(amountGiven) || finalTotal, pointsRedeemed: usePoints ? pointsToRedeem : 0 })}
+                    onClick={() => onComplete({ 
+                        paymentMethod, 
+                        amountPaid: parseFloat(amountGiven) || finalTotal, 
+                        pointsRedeemed: usePoints ? pointsToRedeem : 0,
+                        orderDiscountPercent: parseFloat(discountPercent) || 0
+                    })}
                     sx={{ 
                         flex: 1, 
                         py: 1.5,

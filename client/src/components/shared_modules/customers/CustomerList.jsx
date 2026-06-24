@@ -441,6 +441,15 @@ const CustomerHistoryDialog = ({ open, handleClose, customer, data, loading }) =
                             </Box>
                         )}
                         
+                        {selectedInvoice.orderDiscountAmount > 0 && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>Order Discount ({selectedInvoice.orderDiscountPercent}%):</Typography>
+                                <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>
+                                    -{selectedInvoice.orderDiscountAmount.toFixed(2)}
+                                </Typography>
+                            </Box>
+                        )}
+
                         {selectedInvoice.pointsRedeemed > 0 && (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <Typography variant="body2" sx={{ fontFamily: 'inherit' }}>Points Discount:</Typography>
