@@ -14,7 +14,7 @@ import Notification from '../model/Notification.js';
 // @access  Private (Admin/Cashier)
 export const createSale = async (req, res) => {
     try {
-        const { cartItems, paymentMethod, amountPaid, customer: customerData, pointsRedeemed = 0, orderDiscountPercent = 0 } = req.body;
+        const { cartItems, paymentMethod, amountPaid, customer: customerData, pointsRedeemed = 0, orderDiscountType = 'percentage', orderDiscountValue = 0, orderDiscountPercent = 0 } = req.body;
 
         if (!cartItems || cartItems.length === 0) {
             return res.status(400).json({ message: 'No items in cart' });
@@ -118,8 +118,16 @@ export const createSale = async (req, res) => {
         const total = calculatedSubtotal + tax;
 
         // Apply Order-Level Discount
-        const orderDiscountPercentNum = Number(orderDiscountPercent) || 0;
-        const orderDiscountAmount = total * (orderDiscountPercentNum / 100);
+        let orderDiscountPercentNum = 0;
+        let orderDiscountAmount = 0;
+        
+        if (orderDiscountType === 'fixed') {
+            orderDiscountAmount = Number(orderDiscountValue) || 0;
+            orderDiscountPercentNum = total > 0 ? (orderDiscountAmount / total) * 100 : 0;
+        } else {
+            orderDiscountPercentNum = Number(orderDiscountValue) || Number(orderDiscountPercent) || 0;
+            orderDiscountAmount = total * (orderDiscountPercentNum / 100);
+        }
         let finalTotal = Math.max(0, total - orderDiscountAmount);
 
         // Apply Loyalty Points Discount

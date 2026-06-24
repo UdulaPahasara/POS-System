@@ -221,30 +221,32 @@ const Dashboard = () => {
                         </Select>
                     </FormControl>
                 </Box>
-                <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6}>
-                        <SummaryCard 
-                            title="Cash Payments" 
-                            value={`Rs.${stats?.cashTotal?.toLocaleString() || 0}`} 
-                            subtitle={paymentFilter === 'all' ? 'Total cash received' : paymentFilter === 'today' ? 'Cash received today' : 'Cash received this month'}
-                            icon={<CashIcon fontSize="large" />} 
-                            color="#10b981" 
-                            subtitleColor="#10b981" 
-                            delay={0.1}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <SummaryCard 
-                            title="Card Payments" 
-                            value={`Rs.${stats?.cardTotal?.toLocaleString() || 0}`} 
-                            subtitle={paymentFilter === 'all' ? 'Total card payments' : paymentFilter === 'today' ? 'Card payments today' : 'Card payments this month'}
-                            icon={<CardIcon fontSize="large" />} 
-                            color="#3b82f6" 
-                            subtitleColor="#3b82f6" 
-                            delay={0.2}
-                        />
-                    </Grid>
-                </Grid>
+                <Box 
+                    sx={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, 
+                        gap: 4 
+                    }}
+                >
+                    <SummaryCard 
+                        title="Cash Payments" 
+                        value={`Rs.${stats?.cashTotal?.toLocaleString() || 0}`} 
+                        subtitle={paymentFilter === 'all' ? 'Total cash received' : paymentFilter === 'today' ? 'Cash received today' : 'Cash received this month'}
+                        icon={<CashIcon fontSize="large" />} 
+                        color="#10b981" 
+                        subtitleColor="#10b981" 
+                        delay={0.1}
+                    />
+                    <SummaryCard 
+                        title="Card Payments" 
+                        value={`Rs.${stats?.cardTotal?.toLocaleString() || 0}`} 
+                        subtitle={paymentFilter === 'all' ? 'Total card payments' : paymentFilter === 'today' ? 'Card payments today' : 'Card payments this month'}
+                        icon={<CardIcon fontSize="large" />} 
+                        color="#3b82f6" 
+                        subtitleColor="#3b82f6" 
+                        delay={0.2}
+                    />
+                </Box>
             </Box>
 
             {/* Data Tables */}

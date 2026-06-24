@@ -449,7 +449,7 @@ const POSLayout = () => {
                 onClose={() => setCheckoutOpen(false)}
                 total={total}
                 customer={selectedCustomer}
-                onComplete={async ({ paymentMethod, amountPaid, pointsRedeemed, orderDiscountPercent }) => {
+                onComplete={async ({ paymentMethod, amountPaid, pointsRedeemed, orderDiscountType, orderDiscountValue }) => {
                     try {
                         const data = await posApi.submitSale({
                             cartItems,
@@ -457,7 +457,8 @@ const POSLayout = () => {
                             paymentMethod,
                             amountPaid,
                             pointsRedeemed,
-                            orderDiscountPercent
+                            orderDiscountType,
+                            orderDiscountValue
                         });
                             
                             // Map backend data to frontend receipt format
@@ -510,7 +511,7 @@ const POSLayout = () => {
 
                                 const orderDiscountHtml = saleData.orderDiscountAmount > 0 ? `
                                     <tr>
-                                        <td style="padding: 5px 0; color: #10b981;">Order Discount (${saleData.orderDiscountPercent}%)</td>
+                                        <td style="padding: 5px 0; color: #10b981;">Order Discount ${saleData.orderDiscountPercent > 0 ? `(${saleData.orderDiscountPercent.toFixed(2)}%)` : ''}</td>
                                         <td style="padding: 5px 0; text-align: right; color: #10b981; font-weight: 600;">-LKR ${saleData.orderDiscountAmount.toFixed(2)}</td>
                                     </tr>
                                 ` : '';

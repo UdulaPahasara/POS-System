@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Dialog, DialogTitle, DialogContent, DialogActions, 
-    Button, Typography, Box, TextField, Switch, FormControlLabel, IconButton, Divider, InputAdornment
+    Button, Typography, Box, TextField, Switch, FormControlLabel, IconButton, Divider, InputAdornment, Select, MenuItem
 } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
 import AddIcon from '@mui/icons-material/Add';
@@ -14,7 +14,8 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
     const [change, setChange] = useState(0);
     const [usePoints, setUsePoints] = useState(false);
     const [pointsToRedeem, setPointsToRedeem] = useState(0);
-    const [discountPercent, setDiscountPercent] = useState(0);
+    const [discountType, setDiscountType] = useState('percentage');
+    const [discountValue, setDiscountValue] = useState(0);
 
     useEffect(() => {
         if (open) {
@@ -23,12 +24,14 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
             setChange(0);
             setUsePoints(false);
             setPointsToRedeem(0);
-            setDiscountPercent(0);
+            setDiscountType('percentage');
+            setDiscountValue(0);
         }
     }, [open]);
 
     // Calculate final total after order discount and points (1 point = 1 LKR discount)
-    const orderDiscountAmount = total * ((parseFloat(discountPercent) || 0) / 100);
+    const parsedDiscount = parseFloat(discountValue) || 0;
+    const orderDiscountAmount = discountType === 'percentage' ? total * (parsedDiscount / 100) : Math.min(total, parsedDiscount);
     const discountedTotal = Math.max(0, total - orderDiscountAmount);
     const finalTotal = Number(Math.max(0, discountedTotal - (usePoints ? pointsToRedeem : 0)).toFixed(2));
 
@@ -123,26 +126,57 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
                             <LocalOfferIcon fontSize="small" /> Discount
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto' }}>
-                            <TextField
-                                size="small"
-                                type="number"
-                                placeholder="0"
-                                value={discountPercent === 0 ? '' : discountPercent}
-                                onChange={(e) => setDiscountPercent(Math.max(0, Math.min(100, e.target.value)))}
-                                InputProps={{
-                                    endAdornment: <InputAdornment position="end"><Typography sx={{ color: '#94a3b8' }}>%</Typography></InputAdornment>,
-                                }}
-                                sx={{ 
-                                    width: '100px', 
-                                    '& .MuiOutlinedInput-root': {
-                                        color: '#fff',
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <TextField
+                                    size="small"
+                                    type="number"
+                                    placeholder="0"
+                                    value={discountValue === 0 ? '' : discountValue}
+                                    onWheel={(e) => e.target.blur()}
+                                    onChange={(e) => {
+                                        let val = parseFloat(e.target.value);
+                                        if (isNaN(val)) {
+                                            setDiscountValue('');
+                                            return;
+                                        }
+                                        if (discountType === 'percentage') {
+                                            setDiscountValue(Math.max(0, Math.min(100, val)));
+                                        } else {
+                                            setDiscountValue(Math.max(0, val));
+                                        }
+                                    }}
+                                    sx={{ 
+                                        width: '100px', 
+                                        '& .MuiOutlinedInput-root': {
+                                            color: '#fff',
+                                            bgcolor: 'rgba(0,0,0,0.2)',
+                                            '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                                            '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
+                                            '&.Mui-focused fieldset': { borderColor: '#3b82f6' }
+                                        }
+                                    }}
+                                />
+                                <Select
+                                    size="small"
+                                    value={discountType}
+                                    onChange={(e) => {
+                                        setDiscountType(e.target.value);
+                                        setDiscountValue('');
+                                    }}
+                                    sx={{ 
+                                        color: '#fff', 
                                         bgcolor: 'rgba(0,0,0,0.2)',
-                                        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
-                                        '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-                                        '&.Mui-focused fieldset': { borderColor: '#3b82f6' }
-                                    }
-                                }}
-                            />
+                                        minWidth: '80px',
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+                                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255, 255, 255, 0.3)' },
+                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#3b82f6' },
+                                        '& .MuiSelect-icon': { color: '#94a3b8' }
+                                    }}
+                                >
+                                    <MenuItem value="percentage">%</MenuItem>
+                                    <MenuItem value="fixed">LKR</MenuItem>
+                                </Select>
+                            </Box>
                             {orderDiscountAmount > 0 && (
                                 <Typography sx={{ color: '#10b981', fontWeight: 600, fontSize: '0.9rem' }}>
                                     -LKR {orderDiscountAmount.toFixed(2)}
@@ -161,7 +195,7 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
                     
                     {orderDiscountAmount > 0 && (
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography sx={{ color: '#10b981', fontSize: '0.9rem' }}>Order Discount ({discountPercent}%)</Typography>
+                            <Typography sx={{ color: '#10b981', fontSize: '0.9rem' }}>Order Discount {discountType === 'percentage' && parsedDiscount > 0 ? `(${parsedDiscount}%)` : ''}</Typography>
                             <Typography sx={{ color: '#10b981', fontSize: '0.9rem' }}>- LKR {orderDiscountAmount.toFixed(2)}</Typography>
                         </Box>
                     )}
@@ -225,6 +259,7 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
                             label="Amount Received (LKR)"
                             type="number"
                             value={amountGiven}
+                            onWheel={(e) => e.target.blur()}
                             onChange={(e) => setAmountGiven(e.target.value)}
                             sx={{
                                 mb: 2,
@@ -274,7 +309,8 @@ const CheckoutDialog = ({ open, onClose, total, customer, onComplete }) => {
                         paymentMethod, 
                         amountPaid: parseFloat(amountGiven) || finalTotal, 
                         pointsRedeemed: usePoints ? pointsToRedeem : 0,
-                        orderDiscountPercent: parseFloat(discountPercent) || 0
+                        orderDiscountType: discountType,
+                        orderDiscountValue: parseFloat(discountValue) || 0
                     })}
                     sx={{ 
                         flex: 1, 
