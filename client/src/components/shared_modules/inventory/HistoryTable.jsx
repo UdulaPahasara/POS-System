@@ -7,12 +7,12 @@ import { Inventory2 as InventoryIcon } from '@mui/icons-material';
 import { useNotifications } from '../../../context/NotificationContext';
 import { inventoryApi } from '../../../services/inventoryApi';
 
-const HistoryTable = () => {
+const HistoryTable = ({ selectedBranchId }) => {
     const [logs, setLogs] = useState([]);
 
     const fetchLogs = async () => {
         try {
-            const data = await inventoryApi.getHistory();
+            const data = await inventoryApi.getHistory(selectedBranchId);
             if (data) setLogs(data);
         } catch (error) {
             console.error('Error fetching inventory logs:', error);
@@ -21,7 +21,7 @@ const HistoryTable = () => {
 
     useEffect(() => {
         fetchLogs();
-    }, []);
+    }, [selectedBranchId]);
 
     const { socket } = useNotifications();
     useEffect(() => {

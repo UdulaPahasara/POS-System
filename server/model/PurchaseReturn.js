@@ -29,6 +29,11 @@ const purchaseReturnSchema = new mongoose.Schema({
         ref: 'Supplier',
         required: true
     },
+    branch: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Branch',
+        required: true
+    },
     items: [purchaseReturnItemSchema],
     totalRefund: {
         type: Number,

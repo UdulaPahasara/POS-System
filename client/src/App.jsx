@@ -12,12 +12,14 @@ import POSLayout from './components/pos_cashier/POSLayout';
 import ReportLayout from './components/manager/reports/ReportLayout';
 import SettingsLayout from './components/admin/settings/SettingsLayout';
 import CategoryList from './components/admin/categories/CategoryList';
+import BranchList from './components/admin/branches/BranchList';
 import InventoryDashboard from './components/inventory_staff/dashboard/InventoryDashboard';
 import PurchaseOrderList from './components/shared_modules/purchasing/PurchaseOrderList';
 import PurchaseReturnList from './components/shared_modules/purchasing/PurchaseReturnList';
 import SupplierList from './components/manager/suppliers/SupplierList';
 import InvoiceList from './components/manager/invoices/InvoiceList';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import ChatbotWidget from './components/chatbot/ChatbotWidget';
 import UserProfile from './components/common/UserProfile';
 import './App.css';
 
@@ -57,7 +59,7 @@ function App() {
                     <Route path="inventory" element={<InventoryLayout />} />
                     <Route path="purchase-orders" element={<PurchaseOrderList />} />
                     <Route path="purchase-returns" element={<PurchaseReturnList />} />
-                    <Route element={<ProtectedRoute allowedRoles={['Manager']} />}>
+                    <Route element={<ProtectedRoute allowedRoles={['Admin', 'Manager']} />}>
                         <Route path="suppliers" element={<SupplierList />} />
                     </Route>
                     <Route element={<ProtectedRoute allowedRoles={['Manager', 'Cashier']} />}>
@@ -70,6 +72,7 @@ function App() {
                     </Route>
                     
                     <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+                        <Route path="branches" element={<BranchList />} />
                         <Route path="employees" element={<UserList />} />
                         <Route path="settings" element={<SettingsLayout />} />
                     </Route>
@@ -78,6 +81,7 @@ function App() {
                 </Route>
             </Route>
           </Routes>
+          <ChatbotWidget />
         </Router>
       </NotificationProvider>
     </ThemeProvider>

@@ -8,5 +8,9 @@ export const inventoryApi = {
     adjustStock: (productId, adjustmentData) => api.put(`/products/${productId}/stock`, adjustmentData),
     
     // Get inventory history/logs
-    getHistory: () => api.get('/inventory/logs')
+    getHistory: async (branchId) => {
+        const url = branchId ? `/inventory/logs?branchId=${branchId}` : '/inventory/logs';
+        const response = await api.get(url);
+        return response;
+    }
 };

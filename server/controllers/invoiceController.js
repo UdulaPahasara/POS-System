@@ -5,7 +5,30 @@ import Invoice from '../model/Invoice.js';
 // @access  Private (Admin/Manager)
 export const getInvoices = async (req, res) => {
     try {
-        const invoices = await Invoice.find({})
+        let branchId = req.user.branch;
+        let isAdmin = false;
+        
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
+        }
+
+        if (isAdmin) {
+            if (req.query.branchId === 'global') {
+                branchId = null; // fetch all
+            } else if (req.query.branchId && req.query.branchId !== 'undefined') {
+                branchId = req.query.branchId;
+            }
+        }
+
+        const query = {};
+        if (branchId) {
+            query.branch = branchId;
+        }
+
+
+        const invoices = await Invoice.find(query)
+            .populate('branch', 'name')
             .populate({
                 path: 'sale',
                 populate: [

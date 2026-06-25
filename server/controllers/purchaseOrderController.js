@@ -4,9 +4,6 @@ import User from '../model/User.js';
 import Role from '../model/Role.js';
 import Notification from '../model/Notification.js';
 
-// @desc    Update a purchase order
-// @route   PUT /api/purchase-orders/:id
-// @access  Private
 export const updatePurchaseOrder = async (req, res) => {
     try {
         const { supplier, items, totalCost } = req.body;
@@ -30,12 +27,23 @@ export const updatePurchaseOrder = async (req, res) => {
     }
 };
 
-// @desc    Get all purchase orders
-// @route   GET /api/purchase-orders
-// @access  Private
 export const getPurchaseOrders = async (req, res) => {
     try {
-        const pos = await PurchaseOrder.find()
+        let filter = {};
+        let isAdmin = false;
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin') isAdmin = true;
+        }
+
+        if (!isAdmin) {
+            if (!req.user.branch) return res.status(403).json({ message: 'No branch assigned' });
+            filter.branch = req.user.branch;
+        } else if (req.query.branchId) {
+            filter.branch = req.query.branchId;
+        }
+
+        const pos = await PurchaseOrder.find(filter)
             .populate('supplier')
             .populate('items.product')
             .populate('createdBy', 'username')
@@ -48,12 +56,12 @@ export const getPurchaseOrders = async (req, res) => {
     }
 };
 
-// @desc    Create a new purchase order
-// @route   POST /api/purchase-orders
-// @access  Private (Requires CREATE_PO permission)
 export const createPurchaseOrder = async (req, res) => {
     try {
         const { supplier, items, totalCost } = req.body;
+        const branchId = req.user.branch;
+
+        if (!branchId) return res.status(400).json({ message: 'User must be assigned to a branch to create PO' });
 
         const count = await PurchaseOrder.countDocuments();
         const poNumber = `PO-${Date.now().toString().slice(-4)}-${count + 1}`;
@@ -61,15 +69,22 @@ export const createPurchaseOrder = async (req, res) => {
         const po = await PurchaseOrder.create({
             poNumber,
             supplier,
+            branch: branchId,
             items,
             totalCost,
             createdBy: req.user._id
         });
 
-        // Notify Managers and Admins
-        const roles = await Role.find({ roleName: { $in: ['Admin', 'Manager'] } });
+        const roles = await Role.find({ roleName: { $in: ['Admin', 'Manager', 'Super Admin'] } });
         const roleIds = roles.map(r => r._id);
-        const usersToNotify = await User.find({ role: { $in: roleIds } });
+        const usersToNotify = await User.find({ 
+            role: { $in: roleIds },
+            $or: [
+                { branch: branchId },
+                { branch: { $exists: false } },
+                { branch: null }
+            ]
+        });
 
         for (const user of usersToNotify) {
             const notif = await Notification.create({
@@ -81,9 +96,11 @@ export const createPurchaseOrder = async (req, res) => {
                 relatedId: po._id,
                 relatedModel: 'PurchaseOrder',
                 link: '/admin/purchase-orders',
-                actorRole: req.user.role ? req.user.role.roleName : 'Admin'
+                actorRole: req.user.role ? req.user.role.roleName : 'Admin',
+                branch: branchId
             });
             await notif.populate('actor', 'username profilePic');
+            await notif.populate('branch', 'name');
             if (req.io) {
                 req.io.to(user._id.toString()).emit('new_notification', notif);
             }
@@ -97,9 +114,6 @@ export const createPurchaseOrder = async (req, res) => {
     }
 };
 
-// @desc    Approve a purchase order
-// @route   PUT /api/purchase-orders/:id/approve
-// @access  Private (Requires APPROVE_PO permission)
 export const approvePurchaseOrder = async (req, res) => {
     try {
         const po = await PurchaseOrder.findById(req.params.id);
@@ -113,10 +127,16 @@ export const approvePurchaseOrder = async (req, res) => {
         po.approvedBy = req.user._id;
         await po.save();
 
-        // Notify Admin and Inventory Staff
-        const roles = await Role.find({ roleName: { $in: ['Admin', 'Inventory Staff'] } });
+        const roles = await Role.find({ roleName: { $in: ['Admin', 'Inventory Staff', 'Super Admin'] } });
         const roleIds = roles.map(r => r._id);
-        const usersToNotify = await User.find({ role: { $in: roleIds } });
+        const usersToNotify = await User.find({ 
+            role: { $in: roleIds },
+            $or: [
+                { branch: po.branch },
+                { branch: { $exists: false } },
+                { branch: null }
+            ]
+        });
 
         let currentActorRole = 'Manager';
         if (req.user && req.user.role) {
@@ -133,9 +153,11 @@ export const approvePurchaseOrder = async (req, res) => {
                 relatedId: po._id,
                 relatedModel: 'PurchaseOrder',
                 link: '/admin/purchase-orders',
-                actorRole: currentActorRole
+                actorRole: currentActorRole,
+                branch: po.branch
             });
             await notif.populate('actor', 'username profilePic');
+            await notif.populate('branch', 'name');
             if (req.io) {
                 req.io.to(user._id.toString()).emit('new_notification', notif);
             }
@@ -149,9 +171,6 @@ export const approvePurchaseOrder = async (req, res) => {
     }
 };
 
-// @desc    Receive goods for a purchase order
-// @route   PUT /api/purchase-orders/:id/receive
-// @access  Private (Requires RECEIVE_INVENTORY permission)
 export const receiveGoods = async (req, res) => {
     try {
         const po = await PurchaseOrder.findById(req.params.id).populate('items.product');
@@ -163,19 +182,32 @@ export const receiveGoods = async (req, res) => {
 
         for (const item of po.items) {
             if (item.product) {
-                await Product.findByIdAndUpdate(item.product._id, {
-                    $inc: { stock: item.quantity }
-                });
+                const product = await Product.findById(item.product._id);
+                if (product) {
+                    let bDataIndex = product.branchData.findIndex(b => b.branch.toString() === po.branch.toString());
+                    if (bDataIndex === -1) {
+                        product.branchData.push({ branch: po.branch, sellingPrice: product.sellingPrice || 0, stock: 0 });
+                        bDataIndex = product.branchData.length - 1;
+                    }
+                    product.branchData[bDataIndex].stock += item.quantity;
+                    await product.save();
+                }
             }
         }
 
         po.status = 'Received';
         await po.save();
 
-        // Notify Managers and Admins about goods received
-        const rolesToNotify = await Role.find({ roleName: { $in: ['Admin', 'Manager'] } });
+        const rolesToNotify = await Role.find({ roleName: { $in: ['Admin', 'Manager', 'Super Admin'] } });
         const roleIdsToNotify = rolesToNotify.map(r => r._id);
-        const usersToNotify = await User.find({ role: { $in: roleIdsToNotify } });
+        const usersToNotify = await User.find({ 
+            role: { $in: roleIdsToNotify },
+            $or: [
+                { branch: po.branch },
+                { branch: { $exists: false } },
+                { branch: null }
+            ]
+        });
 
         let currentActorRole = 'Inventory Staff';
         if (req.user && req.user.role) {
@@ -192,9 +224,11 @@ export const receiveGoods = async (req, res) => {
                 relatedId: po._id,
                 relatedModel: 'PurchaseOrder',
                 link: '/admin/purchase-orders',
-                actorRole: currentActorRole
+                actorRole: currentActorRole,
+                branch: po.branch
             });
             await notif.populate('actor', 'username profilePic');
+            await notif.populate('branch', 'name');
             if (req.io) {
                 req.io.to(userToNotify._id.toString()).emit('new_notification', notif);
             }

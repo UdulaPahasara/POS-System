@@ -4,19 +4,34 @@ import {
     Button, TextField, MenuItem, Typography, Box 
 } from '@mui/material';
 import { usersApi } from '../../../services/usersApi';
+import { branchesApi } from '../../../services/branchesApi';
 
 const UserDialog = ({ open, handleClose, user, isEditing }) => {
     const defaultForm = {
-        username: '', email: '', password: '', phone: '', role: 'Cashier', status: 'Active'
+        username: '', email: '', password: '', phone: '', role: 'Cashier', status: 'Active', branch: ''
     };
 
     const [formData, setFormData] = useState(defaultForm);
+    const [branches, setBranches] = useState([]);
+
+    useEffect(() => {
+        const fetchBranches = async () => {
+            try {
+                const data = await branchesApi.getAllBranches();
+                setBranches(data);
+            } catch (err) {
+                console.error('Failed to fetch branches:', err);
+            }
+        };
+        fetchBranches();
+    }, []);
 
     useEffect(() => {
         if (open) {
             if (isEditing && user) {
                 const roleValue = typeof user.role === 'object' ? (user.role?.roleName || 'Cashier') : (user.role || 'Cashier');
-                setFormData({ ...user, role: roleValue, password: '' }); // Don't show password on edit
+                const branchValue = typeof user.branch === 'object' && user.branch ? user.branch._id : (user.branch || '');
+                setFormData({ ...user, role: roleValue, branch: branchValue, password: '' }); // Don't show password on edit
             } else {
                 setFormData(defaultForm);
             }
@@ -138,6 +153,21 @@ const UserDialog = ({ open, handleClose, user, isEditing }) => {
                         <MenuItem value="Active">Active</MenuItem>
                         <MenuItem value="Inactive">Inactive</MenuItem>
                         <MenuItem value="Suspended">Suspended</MenuItem>
+                    </TextField>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                    <TextField
+                        select
+                        fullWidth
+                        label="Assigned Branch"
+                        name="branch"
+                        value={formData.branch}
+                        onChange={handleChange}
+                        sx={inputStyles}
+                    >
+                        {branches.map((b) => (
+                            <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>
+                        ))}
                     </TextField>
                 </Box>
             </DialogContent>

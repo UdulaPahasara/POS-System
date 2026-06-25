@@ -15,9 +15,56 @@ import {
 import Barcode from 'react-barcode';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
-const ProductDialog = ({ open, handleClose, formData, setFormData, handleSubmit, isEditing, categories = [] }) => {
+const ProductDialog = ({ open, handleClose, formData, setFormData, handleSubmit, isEditing, categories = [], branches = [], defaultBranchId = '' }) => {
     
     const [isScanning, setIsScanning] = React.useState(false);
+    const [activeBranchId, setActiveBranchId] = React.useState('');
+    const isAdmin = branches && branches.length > 0;
+
+    // Set default active branch when dialog opens — do NOT auto-populate all branches
+    React.useEffect(() => {
+        if (open && isAdmin) {
+            // Priority: 1) the branch currently selected in the filter (defaultBranchId)
+            //           2) first branch already configured in the product's branchData
+            //           3) first branch in the system
+            const activeId = (defaultBranchId && defaultBranchId !== 'global') ? defaultBranchId
+                : formData.branchData?.[0]?.branch?._id
+                || formData.branchData?.[0]?.branch
+                || branches[0]?._id;
+            setActiveBranchId(activeId?.toString());
+        } else if (!open) {
+            setActiveBranchId('');
+        }
+    }, [open]);
+
+    // Get data for the currently selected branch (or empty defaults if not yet configured)
+    const activeBranchData = formData.branchData?.find(b =>
+        (b.branch?._id || b.branch)?.toString() === activeBranchId?.toString()
+    ) || { sellingPrice: '', stock: '' };
+
+    // Only write to branchData when the user actually types a value
+    const handleBranchChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => {
+            const existing = prev.branchData || [];
+            const idx = existing.findIndex(b =>
+                (b.branch?._id || b.branch)?.toString() === activeBranchId?.toString()
+            );
+            if (idx >= 0) {
+                // Update existing entry
+                const updated = existing.map((b, i) =>
+                    i === idx ? { ...b, [name]: Number(value) } : b
+                );
+                return { ...prev, branchData: updated };
+            } else {
+                // Create new entry only when user first touches this branch
+                return {
+                    ...prev,
+                    branchData: [...existing, { branch: activeBranchId, [name]: Number(value) }]
+                };
+            }
+        });
+    };
 
     React.useEffect(() => {
         let scanner = null;
@@ -187,14 +234,35 @@ const ProductDialog = ({ open, handleClose, formData, setFormData, handleSubmit,
                         </Grid>
                         <Grid item xs={12} md={9}>
                             <Grid container spacing={2.5}>
+                                {isAdmin && (
+                                    <Grid item xs={12}>
+                                        <TextField
+                                            fullWidth
+                                            select
+                                            label="Configure Pricing & Stock For Branch"
+                                            value={activeBranchId}
+                                            onChange={(e) => setActiveBranchId(e.target.value)}
+                                            variant="outlined"
+                                            sx={{
+                                                ...inputStyles, 
+                                                '& .MuiOutlinedInput-root': { ...inputStyles['& .MuiOutlinedInput-root'], bgcolor: 'rgba(16, 185, 129, 0.05)', '&.Mui-focused': { bgcolor: 'rgba(16, 185, 129, 0.1)' } },
+                                                '& .MuiInputLabel-root.Mui-focused': { color: '#10b981' }
+                                            }}
+                                        >
+                                            {branches.map(b => (
+                                                <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>
+                                            ))}
+                                        </TextField>
+                                    </Grid>
+                                )}
                                 <Grid item xs={12} sm={4}>
                                     <TextField fullWidth label="Cost Price" name="costPrice" type="number" value={formData.costPrice} onChange={handleChange} required variant="outlined" sx={inputStyles} InputProps={{ startAdornment: <InputAdornment position="start"><Typography sx={{color:'#94a3b8'}}>LKR </Typography></InputAdornment> }} />
                                 </Grid>
                                 <Grid item xs={12} sm={4}>
-                                    <TextField fullWidth label="Selling Price" name="sellingPrice" type="number" value={formData.sellingPrice} onChange={handleChange} required variant="outlined" sx={inputStyles} InputProps={{ startAdornment: <InputAdornment position="start"><Typography sx={{color:'#94a3b8'}}>LKR </Typography></InputAdornment> }} />
+                                    <TextField fullWidth label="Selling Price" name="sellingPrice" type="number" value={isAdmin ? (activeBranchData.sellingPrice !== undefined ? activeBranchData.sellingPrice : '') : formData.sellingPrice} onChange={isAdmin ? handleBranchChange : handleChange} required variant="outlined" sx={inputStyles} InputProps={{ startAdornment: <InputAdornment position="start"><Typography sx={{color:'#94a3b8'}}>LKR </Typography></InputAdornment> }} />
                                 </Grid>
                                 <Grid item xs={12} sm={4}>
-                                    <TextField fullWidth label={isEditing ? "Stock Quantity" : "Initial Stock"} name="stock" type="number" value={formData.stock !== undefined ? formData.stock : ''} onChange={handleChange} required variant="outlined" sx={inputStyles} placeholder="e.g. 50" />
+                                    <TextField fullWidth label={isEditing ? "Stock Quantity" : "Initial Stock"} name="stock" type="number" value={isAdmin ? (activeBranchData.stock !== undefined ? activeBranchData.stock : '') : (formData.stock !== undefined ? formData.stock : '')} onChange={isAdmin ? handleBranchChange : handleChange} required variant="outlined" sx={inputStyles} placeholder="e.g. 50" />
                                 </Grid>
                                 <Grid item xs={12} sm={4}>
                                     <TextField fullWidth label="Reorder Level" name="reorderLevel" type="number" value={formData.reorderLevel !== undefined ? formData.reorderLevel : ''} onChange={handleChange} required variant="outlined" sx={inputStyles} placeholder="e.g. 10" />

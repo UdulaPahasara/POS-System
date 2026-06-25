@@ -31,7 +31,21 @@ export const updatePurchaseReturn = async (req, res) => {
 
 export const getPurchaseReturns = async (req, res) => {
     try {
-        const prs = await PurchaseReturn.find()
+        let filter = {};
+        let isAdmin = false;
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin') isAdmin = true;
+        }
+
+        if (!isAdmin) {
+            if (!req.user.branch) return res.status(403).json({ message: 'No branch assigned' });
+            filter.branch = req.user.branch;
+        } else if (req.query.branchId) {
+            filter.branch = req.query.branchId;
+        }
+
+        const prs = await PurchaseReturn.find(filter)
             .populate('supplier')
             .populate('items.product')
             .populate('createdBy', 'username')
@@ -47,6 +61,9 @@ export const getPurchaseReturns = async (req, res) => {
 export const createPurchaseReturn = async (req, res) => {
     try {
         const { supplier, items, totalRefund, reason } = req.body;
+        const branchId = req.user.branch;
+
+        if (!branchId) return res.status(400).json({ message: 'User must be assigned to a branch to create PR' });
 
         const count = await PurchaseReturn.countDocuments();
         const prNumber = `PR-${Date.now().toString().slice(-4)}-${count + 1}`;
@@ -54,17 +71,23 @@ export const createPurchaseReturn = async (req, res) => {
         const pr = await PurchaseReturn.create({
             prNumber,
             supplier,
+            branch: branchId,
             items,
             totalRefund,
-            reason,
             reason,
             createdBy: req.user._id
         });
 
-        // Notify Managers and Admins
-        const rolesToNotify = await Role.find({ roleName: { $in: ['Admin', 'Manager'] } });
+        const rolesToNotify = await Role.find({ roleName: { $in: ['Admin', 'Manager', 'Super Admin'] } });
         const roleIdsToNotify = rolesToNotify.map(r => r._id);
-        const usersToNotify = await User.find({ role: { $in: roleIdsToNotify } });
+        const usersToNotify = await User.find({ 
+            role: { $in: roleIdsToNotify },
+            $or: [
+                { branch: branchId },
+                { branch: { $exists: false } },
+                { branch: null }
+            ]
+        });
 
         let currentActorRole = 'Inventory Staff';
         if (req.user && req.user.role) {
@@ -81,9 +104,11 @@ export const createPurchaseReturn = async (req, res) => {
                 relatedId: pr._id,
                 relatedModel: 'PurchaseReturn',
                 link: '/admin/purchase-returns',
-                actorRole: currentActorRole
+                actorRole: currentActorRole,
+                branch: branchId
             });
             await notif.populate('actor', 'username profilePic');
+            await notif.populate('branch', 'name');
             if (req.io) {
                 req.io.to(user._id.toString()).emit('new_notification', notif);
             }
@@ -110,10 +135,16 @@ export const approvePurchaseReturn = async (req, res) => {
         pr.approvedBy = req.user._id;
         await pr.save();
 
-        // Notify Admin and Inventory Staff
-        const rolesToNotify = await Role.find({ roleName: { $in: ['Admin', 'Inventory Staff'] } });
+        const rolesToNotify = await Role.find({ roleName: { $in: ['Admin', 'Inventory Staff', 'Super Admin'] } });
         const roleIdsToNotify = rolesToNotify.map(r => r._id);
-        const usersToNotify = await User.find({ role: { $in: roleIdsToNotify } });
+        const usersToNotify = await User.find({ 
+            role: { $in: roleIdsToNotify },
+            $or: [
+                { branch: pr.branch },
+                { branch: { $exists: false } },
+                { branch: null }
+            ]
+        });
 
         let currentActorRole = 'Manager';
         if (req.user && req.user.role) {
@@ -130,9 +161,11 @@ export const approvePurchaseReturn = async (req, res) => {
                 relatedId: pr._id,
                 relatedModel: 'PurchaseReturn',
                 link: '/admin/purchase-returns',
-                actorRole: currentActorRole
+                actorRole: currentActorRole,
+                branch: pr.branch
             });
             await notif.populate('actor', 'username profilePic');
+            await notif.populate('branch', 'name');
             if (req.io) {
                 req.io.to(user._id.toString()).emit('new_notification', notif);
             }
@@ -157,20 +190,23 @@ export const shipPurchaseReturn = async (req, res) => {
 
         for (const item of pr.items) {
             if (item.product) {
-                const product = await Product.findByIdAndUpdate(
-                    item.product._id, 
-                    { $inc: { stock: -item.quantity } },
-                    { new: true }
-                );
+                const product = await Product.findById(item.product._id);
                 if (product) {
-                    await InventoryLog.create({
-                        product: product._id,
-                        action: 'Subtract',
-                        quantityChanged: item.quantity,
-                        newStockLevel: Math.max(0, product.stock),
-                        reason: `Purchase Return ${pr.prNumber}`,
-                        adminUser: req.user._id
-                    });
+                    let bDataIndex = product.branchData.findIndex(b => b.branch.toString() === pr.branch.toString());
+                    if (bDataIndex !== -1) {
+                        product.branchData[bDataIndex].stock = Math.max(0, product.branchData[bDataIndex].stock - item.quantity);
+                        await product.save();
+
+                        await InventoryLog.create({
+                            product: product._id,
+                            branch: pr.branch,
+                            action: 'Subtract',
+                            quantityChanged: item.quantity,
+                            newStockLevel: product.branchData[bDataIndex].stock,
+                            reason: `Purchase Return ${pr.prNumber}`,
+                            adminUser: req.user._id
+                        });
+                    }
                 }
             }
         }
@@ -178,10 +214,16 @@ export const shipPurchaseReturn = async (req, res) => {
         pr.status = 'Returned';
         await pr.save();
 
-        // Notify Managers and Admins about goods returned
-        const rolesToNotify = await Role.find({ roleName: { $in: ['Admin', 'Manager'] } });
+        const rolesToNotify = await Role.find({ roleName: { $in: ['Admin', 'Manager', 'Super Admin'] } });
         const roleIdsToNotify = rolesToNotify.map(r => r._id);
-        const usersToNotify = await User.find({ role: { $in: roleIdsToNotify } });
+        const usersToNotify = await User.find({ 
+            role: { $in: roleIdsToNotify },
+            $or: [
+                { branch: pr.branch },
+                { branch: { $exists: false } },
+                { branch: null }
+            ]
+        });
 
         let currentActorRole = 'Inventory Staff';
         if (req.user && req.user.role) {
@@ -198,9 +240,11 @@ export const shipPurchaseReturn = async (req, res) => {
                 relatedId: pr._id,
                 relatedModel: 'PurchaseReturn',
                 link: '/admin/purchase-returns',
-                actorRole: currentActorRole
+                actorRole: currentActorRole,
+                branch: pr.branch
             });
             await notif.populate('actor', 'username profilePic');
+            await notif.populate('branch', 'name');
             if (req.io) {
                 req.io.to(userToNotify._id.toString()).emit('new_notification', notif);
             }

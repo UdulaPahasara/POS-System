@@ -3,14 +3,14 @@ import { Box, Typography, Paper, Grid, CircularProgress } from '@mui/material';
 import { AttachMoney as MoneyIcon, TrendingUp as TrendingUpIcon, AccountBalanceWallet as WalletIcon } from '@mui/icons-material';
 import { reportsApi } from '../../../services/reportsApi';
 
-const FinancialReports = () => {
+const FinancialReports = ({ selectedBranchId }) => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchFinancials = async () => {
             try {
-                const data = await reportsApi.getFinancialReport();
+                const data = await reportsApi.getFinancialReport({ branchId: selectedBranchId });
                 if (data) setData(data);
             } catch (error) {
                 console.error("Error fetching financial reports", error);
@@ -19,7 +19,7 @@ const FinancialReports = () => {
             }
         };
         fetchFinancials();
-    }, []);
+    }, [selectedBranchId]);
 
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
     if (!data) return <Typography color="error">Failed to load financial data.</Typography>;
@@ -31,6 +31,7 @@ const FinancialReports = () => {
                 <Grid item xs={12} md={4}>
                     <Paper sx={{ 
                         p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2,
+                        height: '100%', boxSizing: 'border-box',
                         animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both`,
                         '@keyframes slideUp': {
                             '0%': { opacity: 0, transform: 'translateY(30px)' },
@@ -49,6 +50,7 @@ const FinancialReports = () => {
                 <Grid item xs={12} md={4}>
                     <Paper sx={{ 
                         p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2,
+                        height: '100%', boxSizing: 'border-box',
                         animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both`,
                         '@keyframes slideUp': {
                             '0%': { opacity: 0, transform: 'translateY(30px)' },
@@ -67,6 +69,7 @@ const FinancialReports = () => {
                 <Grid item xs={12} md={4}>
                     <Paper sx={{ 
                         p: 3, bgcolor: '#1e293b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2,
+                        height: '100%', boxSizing: 'border-box',
                         animation: `slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both`,
                         '@keyframes slideUp': {
                             '0%': { opacity: 0, transform: 'translateY(30px)' },

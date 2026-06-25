@@ -17,7 +17,9 @@ const PurchaseReturnList = () => {
     const location = useLocation();
     const [highlightedPrId, setHighlightedPrId] = useState(null);
     const [returns, setReturns] = useState([]);
-    const [products, setProducts] = useState([]);
+    const [globalProducts, setGlobalProducts] = useState([]);
+    const [branchProducts, setBranchProducts] = useState([]);
+    const [products, setProducts] = useState([]); // keep for compatibility if needed, or remove
     const [suppliers, setSuppliers] = useState([]);
     const [categories, setCategories] = useState([]);
     const [openAdd, setOpenAdd] = useState(false);
@@ -83,7 +85,7 @@ const PurchaseReturnList = () => {
 
     useEffect(() => {
         if (selectedProduct) {
-            const prod = products.find(p => p._id === selectedProduct);
+            const prod = globalProducts.find(p => p._id === selectedProduct);
             if (prod && prod.costPrice) {
                 const numericQty = Number(qty) || 0;
                 setRefundAmount((prod.costPrice * numericQty).toString());
@@ -95,15 +97,17 @@ const PurchaseReturnList = () => {
 
     const fetchData = async () => {
         try {
-            const [prData, pData, sData, cData] = await Promise.all([
+            const [prData, globalPData, pData, sData, cData] = await Promise.all([
                 purchasingApi.getPurchaseReturns(),
+                productsApi.getAllProducts('global'),
                 productsApi.getAllProducts(),
                 suppliersApi.getAllSuppliers(),
                 categoriesApi.getAllCategories()
             ]);
             
             if (prData) setReturns(prData);
-            if (pData) setProducts(pData);
+            if (globalPData) setGlobalProducts(globalPData);
+            if (pData) { setProducts(pData); setBranchProducts(pData); }
             if (sData) setSuppliers(sData);
             if (cData) setCategories(cData);
         } catch (error) {
@@ -114,19 +118,19 @@ const PurchaseReturnList = () => {
     const getProductDisplayInfo = (poItems) => {
         if (!poItems || poItems.length === 0) return { name: 'N/A', category: 'N/A' };
         
-        const firstItemProdId = poItems[0].product?._id || poItems[0].product;
-        const firstProd = products.find(p => p._id === firstItemProdId);
+        const firstItemProd = poItems[0].product;
         
         let categoryName = 'Uncategorized';
-        if (firstProd) {
-            const catId = firstProd.category?._id || firstProd.category;
+        if (firstItemProd && firstItemProd.category) {
+            const catId = firstItemProd.category?._id || firstItemProd.category;
             const cat = categories.find(c => c._id === catId);
             if (cat) categoryName = cat.name;
         }
 
         const productNames = poItems.map(item => {
+            if (item.product && item.product.name) return item.product.name;
             const prodId = item.product?._id || item.product;
-            const prod = products.find(p => p._id === prodId);
+            const prod = globalProducts.find(p => p._id === prodId);
             return prod ? prod.name : 'Unknown Product';
         });
         
@@ -222,9 +226,16 @@ const PurchaseReturnList = () => {
     };
 
     return (
-        <Box sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h5" sx={{ color: '#fff', fontWeight: 600 }}>Purchase Returns</Typography>
+        <Box>
+            <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between', 
+                alignItems: { xs: 'stretch', sm: 'center' },
+                gap: 2,
+                mb: 3 
+            }}>
+                <Typography variant="h5" sx={{ color: '#fff', fontWeight: 600, fontSize: { xs: '1.5rem', sm: '1.5rem' } }}>Purchase Returns</Typography>
                 {canCreate && roleName !== 'Manager' && (
                     <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setIsEditMode(false); setOpenAdd(true); }} sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>
                         Create Return
@@ -354,7 +365,7 @@ const PurchaseReturnList = () => {
                             disabled={!formData.supplier}
                         >
                             {!formData.supplier && <MenuItem value="" disabled>Select a supplier first</MenuItem>}
-                            {products
+                            {globalProducts
                                 .filter(p => {
                                     const selectedSupplierObj = suppliers.find(s => s._id === formData.supplier);
                                     return (p.supplier?._id === formData.supplier || p.supplier === formData.supplier) || 
@@ -382,7 +393,7 @@ const PurchaseReturnList = () => {
                         <Typography variant="subtitle2" color="#94a3b8" sx={{ mb: 1 }}>Selected Items to Return:</Typography>
                         {formData.items.length === 0 && <Typography variant="body2" color="#666">No items added yet.</Typography>}
                         {formData.items.map((i, idx) => {
-                            const pName = products.find(p => p._id === i.product)?.name;
+                            const pName = globalProducts.find(p => p._id === i.product)?.name;
                             return (
                                 <Box key={idx} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
                                     <Typography sx={{ color: '#fff', fontSize: '0.9rem' }}>

@@ -13,7 +13,7 @@ export const loginUser = async (req, res) => {
         const user = await User.findOne({ email }).populate({
             path: 'role',
             populate: { path: 'permissions' }
-        });
+        }).populate('branch');
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
@@ -28,7 +28,7 @@ export const loginUser = async (req, res) => {
         // If Remember Me is checked, token lasts 30 days. Otherwise, standard 1 day session.
         const expiresIn = rememberMe ? '30d' : '1d';
         const token = jwt.sign(
-            { id: user._id, role: user.role }, 
+            { id: user._id, role: user.role, branch: user.branch ? user.branch._id : null }, 
             process.env.JWT_SECRET, 
             { expiresIn }
         );
@@ -41,6 +41,7 @@ export const loginUser = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
+                branch: user.branch,
                 profilePic: user.profilePic
             }
         });

@@ -103,7 +103,14 @@ const CustomerList = () => {
 
     return (
         <Box sx={{ fontFamily: 'Poppins, sans-serif' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
+            <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between',
+                alignItems: { xs: 'stretch', sm: 'flex-start' },
+                gap: 2,
+                mb: 4 
+            }}>
                 <Box>
                     <Typography variant="h5" sx={{ fontWeight: 700, color: '#fff', mb: 1 }}>Customers</Typography>
                     <Typography variant="body2" sx={{ color: '#94a3b8' }}>Manage your customer database and loyalty points.</Typography>

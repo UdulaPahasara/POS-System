@@ -5,8 +5,14 @@ import Notification from '../model/Notification.js';
 // @access  Private
 export const getNotifications = async (req, res) => {
     try {
-        const notifications = await Notification.find({ recipient: req.user._id })
+        let filter = { recipient: req.user._id };
+        if (req.user.branch) {
+            filter.branch = req.user.branch;
+        }
+
+        const notifications = await Notification.find(filter)
             .populate('actor', 'username profilePic')
+            .populate('branch', 'name')
             .sort({ createdAt: -1 })
             .limit(50); // Get latest 50
         res.json(notifications);

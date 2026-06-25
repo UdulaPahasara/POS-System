@@ -93,8 +93,20 @@ const CategoryList = () => {
 
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4" sx={{ color: '#fff', fontWeight: 600 }}>Categories</Typography>
+            <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' }, 
+                justifyContent: 'space-between', 
+                alignItems: { xs: 'stretch', sm: 'center' },
+                gap: 2,
+                mb: 3 
+            }}>
+                <Typography 
+                    variant="h4" 
+                    sx={{ color: '#fff', fontWeight: 600, fontSize: { xs: '1.75rem', sm: '2.125rem' } }}
+                >
+                    Categories
+                </Typography>
                 <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()} sx={{ bgcolor: '#3b82f6' }}>
                     Add Category
                 </Button>

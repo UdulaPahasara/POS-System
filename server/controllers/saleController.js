@@ -15,12 +15,16 @@ import Notification from '../model/Notification.js';
 export const createSale = async (req, res) => {
     try {
         const { cartItems, paymentMethod, amountPaid, customer: customerData, pointsRedeemed = 0, orderDiscountType = 'percentage', orderDiscountValue = 0, orderDiscountPercent = 0 } = req.body;
+        const branchId = req.user.branch?._id || req.user.branch;
+
+        if (!branchId) {
+            return res.status(400).json({ message: 'User must be assigned to a branch to make a sale' });
+        }
 
         if (!cartItems || cartItems.length === 0) {
             return res.status(400).json({ message: 'No items in cart' });
         }
 
-        // Verify and calculate server-side
         let calculatedSubtotal = 0;
         let calculatedTax = 0;
         const processedItems = [];
@@ -28,36 +32,43 @@ export const createSale = async (req, res) => {
         for (const item of cartItems) {
             const product = await Product.findById(item.product._id).populate('category', 'taxRate');
             if (!product) {
-                return res.status(404).json({ message: `Product ${item.product.name} not found` });
+                return res.status(404).json({ message: `Product ${item.product.name || 'Unknown'} not found` });
             }
 
-            // Check stock, allow negative but log warning (as approved)
-            if (product.stock < item.quantity) {
-                console.warn(`[Stock Warning] Product ${product.name} is low on stock (${product.stock}). Sale proceeded.`);
+            const bDataIndex = product.branchData.findIndex(b => b.branch.toString() === branchId.toString());
+            if (bDataIndex === -1) {
+                return res.status(400).json({ message: `Product ${product.name} is not available in your branch.` });
             }
 
-            // Check if stock will drop below reorder level
-            const willBeLowStock = (product.stock - item.quantity) <= product.reorderLevel;
-            const wasLowStock = product.stock <= product.reorderLevel;
+            let currentStock = product.branchData[bDataIndex].stock;
+            const sellingPrice = product.branchData[bDataIndex].sellingPrice;
 
-            // Deduct stock
-            product.stock -= item.quantity;
+            if (currentStock < item.quantity) {
+                console.warn(`[Stock Warning] Product ${product.name} is low on stock (${currentStock}). Sale proceeded.`);
+            }
+
+            const willBeLowStock = (currentStock - item.quantity) <= product.reorderLevel;
+            const wasLowStock = currentStock <= product.reorderLevel;
+
+            // Deduct branch stock
+            product.branchData[bDataIndex].stock -= item.quantity;
             await product.save();
 
             // Record audit log
             await InventoryLog.create({
                 product: product._id,
+                branch: branchId,
                 action: 'Subtract',
                 quantityChanged: item.quantity,
-                newStockLevel: product.stock,
+                newStockLevel: product.branchData[bDataIndex].stock,
                 reason: 'Sale Completed',
                 adminUser: req.user._id
             });
 
-            // Trigger notification if it just dropped below reorder level (prevent spam if it was already low)
             if (willBeLowStock && !wasLowStock) {
                 const adminManagerRoles = await Role.find({ roleName: { $in: ['Admin', 'Manager', 'Inventory Staff'] } });
                 const adminManagerRoleIds = adminManagerRoles.map(r => r._id);
+                // Also optionally filter by branch if we only want to notify branch managers
                 const usersToNotify = await User.find({ role: { $in: adminManagerRoleIds } });
 
                 for (const user of usersToNotify) {
@@ -65,22 +76,22 @@ export const createSale = async (req, res) => {
                         recipient: user._id,
                         actor: req.user._id,
                         title: 'Low Stock Alert',
-                        message: `Product "${product.name}" dropped below reorder level (${product.stock} remaining).`,
-                        type: product.stock <= 0 ? 'error' : 'warning',
+                        message: `Product "${product.name}" dropped below reorder level (${product.branchData[bDataIndex].stock} remaining) at your branch.`,
+                        type: product.branchData[bDataIndex].stock <= 0 ? 'error' : 'warning',
                         relatedId: product._id,
                         relatedModel: 'Product',
-                        link: '/admin/products'
+                        link: '/admin/inventory',
+                        branch: branchId
                     });
                     await notif.populate('actor', 'username profilePic');
+                    await notif.populate('branch', 'name');
                     if (req.io) {
                         req.io.to(user._id.toString()).emit('new_notification', notif);
                     }
                 }
             }
 
-            // Discount calculation logic
-            const price = Number(product.sellingPrice);
-            let discountedPrice = price;
+            let discountedPrice = sellingPrice;
             let discountObj = undefined;
 
             if (product.discount && product.discount.amount > 0) {
@@ -89,9 +100,9 @@ export const createSale = async (req, res) => {
                 discountObj = { type, amount: amt };
 
                 if (type === 'percentage') {
-                    discountedPrice = price * (1 - amt / 100);
+                    discountedPrice = sellingPrice * (1 - amt / 100);
                 } else {
-                    discountedPrice = Math.max(0, price - amt);
+                    discountedPrice = Math.max(0, sellingPrice - amt);
                 }
             }
 
@@ -106,7 +117,7 @@ export const createSale = async (req, res) => {
                 product: product._id,
                 name: product.name,
                 quantity: item.quantity,
-                sellingPrice: price,
+                sellingPrice: sellingPrice,
                 discount: discountObj,
                 discountedPrice: discountedPrice,
                 subtotal: itemSubtotal,
@@ -117,7 +128,6 @@ export const createSale = async (req, res) => {
         const tax = calculatedTax;
         const total = calculatedSubtotal + tax;
 
-        // Apply Order-Level Discount
         let orderDiscountPercentNum = 0;
         let orderDiscountAmount = 0;
         
@@ -130,7 +140,6 @@ export const createSale = async (req, res) => {
         }
         let finalTotal = Math.max(0, total - orderDiscountAmount);
 
-        // Apply Loyalty Points Discount
         let pointsToRedeem = Number(pointsRedeemed);
         let customerRecord = null;
 
@@ -144,28 +153,26 @@ export const createSale = async (req, res) => {
                 const pointsDiscountAmount = pointsToRedeem;
                 finalTotal = Math.max(0, finalTotal - pointsDiscountAmount);
             } else {
-                pointsToRedeem = 0; // Invalid customer ID
+                pointsToRedeem = 0;
             }
         } else {
-            pointsToRedeem = 0; // Cannot redeem without customer
+            pointsToRedeem = 0;
         }
 
-        // Calculate points earned (1 point per 1000 LKR spent)
         let pointsEarned = 0;
         if (customerRecord) {
             pointsEarned = Math.floor(finalTotal / 1000);
         }
 
-        // Determine change
         const change = paymentMethod === 'Cash' ? Number(Math.max(0, amountPaid - finalTotal).toFixed(2)) : 0;
-        
         finalTotal = Number(finalTotal.toFixed(2));
         
         const cashAmount = paymentMethod === 'Cash' ? finalTotal : 0;
         const cardAmount = paymentMethod === 'Card' ? finalTotal : 0;
 
         let sale = new Sale({
-            cashier: req.user._id, // Assuming authMiddleware sets req.user
+            cashier: req.user._id,
+            branch: branchId,
             customer: customerData ? {
                 name: customerData.name,
                 email: customerData.email,
@@ -185,7 +192,6 @@ export const createSale = async (req, res) => {
 
         const createdSale = await sale.save();
 
-        // Generate Auto-incrementing Invoice Number (e.g. 0000000000001)
         const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 });
         let nextInvoiceNum = 1;
         
@@ -197,15 +203,15 @@ export const createSale = async (req, res) => {
         }
         const invoiceNumberStr = nextInvoiceNum.toString().padStart(13, '0');
 
-        // Create Invoice
         const invoice = new Invoice({
             invoiceNumber: invoiceNumberStr,
             total: finalTotal,
-            sale: createdSale._id
+            sale: createdSale._id,
+            cashier: req.user._id,
+            branch: branchId
         });
         await invoice.save();
 
-        // Create Payment
         const payment = new Payment({
             amount: paymentMethod === 'Card' ? finalTotal : amountPaid,
             paymentMethod: paymentMethod,
@@ -214,7 +220,6 @@ export const createSale = async (req, res) => {
         });
         await payment.save();
 
-        // Handle Loyalty Transaction
         if (customerRecord && (pointsEarned > 0 || pointsToRedeem > 0)) {
             const loyaltyTx = new LoyaltyTransaction({
                 customer: customerRecord._id,
@@ -224,19 +229,16 @@ export const createSale = async (req, res) => {
             });
             await loyaltyTx.save();
 
-            // Update customer balance
             const currentPoints = customerRecord.loyaltyPoints || 0;
             customerRecord.loyaltyPoints = currentPoints - pointsToRedeem + pointsEarned;
             customerRecord.totalRedeemedPoints = (customerRecord.totalRedeemedPoints || 0) + pointsToRedeem;
             await customerRecord.save();
         }
 
-        // Update Sale with refs
         createdSale.invoice = invoice._id;
         createdSale.payments = [payment._id];
         await createdSale.save();
 
-        // Fetch populated sale
         const populatedSale = await Sale.findById(createdSale._id)
             .populate('invoice')
             .populate('payments');
@@ -255,10 +257,26 @@ export const createSale = async (req, res) => {
 
 // @desc    Get all sales
 // @route   GET /api/sales
-// @access  Private (Admin)
+// @access  Private (Admin/Manager)
 export const getSales = async (req, res) => {
     try {
-        const sales = await Sale.find({})
+        let filter = {};
+        
+        // Is user an Admin? If not, restrict to their own branch.
+        let isAdmin = false;
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin') isAdmin = true;
+        }
+
+        if (!isAdmin) {
+            if (!req.user.branch) return res.status(403).json({ message: 'No branch assigned' });
+            filter.branch = req.user.branch;
+        } else if (req.query.branchId && req.query.branchId !== 'global') {
+            filter.branch = req.query.branchId;
+        }
+
+        const sales = await Sale.find(filter)
             .populate('cashier', 'username name email')
             .populate('invoice')
             .populate('payments')
@@ -272,7 +290,7 @@ export const getSales = async (req, res) => {
 
 // @desc    Get sales by customer ID
 // @route   GET /api/sales/customer/:customerId
-// @access  Private (Admin/Manager/Cashier)
+// @access  Private
 export const getSalesByCustomer = async (req, res) => {
     try {
         const customerId = req.params.customerId;
@@ -285,13 +303,25 @@ export const getSalesByCustomer = async (req, res) => {
             return res.status(404).json({ message: 'Customer not found' });
         }
 
-        const sales = await Sale.find({ 'customer.phone': customer.phone })
+        let filter = { 'customer.phone': customer.phone };
+        
+        let isAdmin = false;
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin') isAdmin = true;
+        }
+
+        if (!isAdmin) {
+            if (!req.user.branch) return res.status(403).json({ message: 'No branch assigned' });
+            filter.branch = req.user.branch;
+        }
+
+        const sales = await Sale.find(filter)
             .populate('cashier', 'name username email')
             .populate('items.product', 'name category')
             .populate('payments')
             .sort({ createdAt: -1 });
 
-        // Format sales to include invoice numbers
         const Invoice = mongoose.model('Invoice');
         const formattedSales = await Promise.all(sales.map(async (sale) => {
             const invoice = await Invoice.findOne({ sale: sale._id });

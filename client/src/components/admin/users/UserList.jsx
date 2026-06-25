@@ -14,9 +14,13 @@ import {
 import UserDialog from './UserDialog';
 import { useNotifications } from '../../../context/NotificationContext';
 import { usersApi } from '../../../services/usersApi';
+import { branchesApi } from '../../../services/branchesApi';
+import { TextField, MenuItem } from '@mui/material';
 
 const UserList = () => {
     const [users, setUsers] = useState([]);
+    const [branches, setBranches] = useState([]);
+    const [selectedBranchId, setSelectedBranchId] = useState('');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
@@ -30,7 +34,7 @@ const UserList = () => {
 
     const fetchUsers = async () => {
         try {
-            const data = await usersApi.getAllUsers();
+            const data = await usersApi.getAllUsers(selectedBranchId);
             if (data) setUsers(data);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -38,8 +42,23 @@ const UserList = () => {
     };
 
     useEffect(() => {
-        fetchUsers();
+        const fetchBranches = async () => {
+            try {
+                const data = await branchesApi.getAllBranches();
+                if (data) {
+                    setBranches(data);
+                    setSelectedBranchId('global');
+                }
+            } catch (error) {
+                console.error('Error fetching branches:', error);
+            }
+        };
+        fetchBranches();
     }, []);
+
+    useEffect(() => {
+        fetchUsers();
+    }, [selectedBranchId]);
 
     const { socket } = useNotifications();
     useEffect(() => {
@@ -118,16 +137,51 @@ const UserList = () => {
 
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4" sx={{ color: '#fff', fontWeight: 600 }}>Employee Management</Typography>
-                <Button 
-                    variant="contained" 
-                    startIcon={<AddIcon />} 
-                    onClick={handleOpenAdd}
-                    sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' }, textTransform: 'none', borderRadius: 2 }}
+            <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' }, 
+                justifyContent: 'space-between', 
+                alignItems: { xs: 'stretch', sm: 'center' },
+                gap: 2,
+                mb: 3 
+            }}>
+                <Typography 
+                    variant="h4" 
+                    sx={{ color: '#fff', fontWeight: 600, fontSize: { xs: '1.75rem', sm: '2.125rem' } }}
                 >
-                    Add Employee
-                </Button>
+                    Employee Management
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <TextField
+                        select
+                        size="small"
+                        value={selectedBranchId}
+                        onChange={(e) => setSelectedBranchId(e.target.value)}
+                        sx={{
+                            minWidth: '200px',
+                            '& .MuiOutlinedInput-root': {
+                                color: '#fff',
+                                bgcolor: 'rgba(255,255,255,0.05)',
+                                '& fieldset': { border: '1px solid rgba(255,255,255,0.1)' },
+                                '&:hover fieldset': { border: '1px solid rgba(255,255,255,0.2)' },
+                            },
+                            '& .MuiSelect-icon': { color: '#94a3b8' }
+                        }}
+                    >
+                        <MenuItem value="global">All Branches / Global</MenuItem>
+                        {branches.map(b => (
+                            <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>
+                        ))}
+                    </TextField>
+                    <Button 
+                        variant="contained" 
+                        startIcon={<AddIcon />} 
+                        onClick={handleOpenAdd}
+                        sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' }, textTransform: 'none', borderRadius: 2 }}
+                    >
+                        Add Employee
+                    </Button>
+                </Box>
             </Box>
 
             <TableContainer component={Paper} sx={{ 
@@ -144,6 +198,7 @@ const UserList = () => {
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Employee</TableCell>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Contact</TableCell>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Role</TableCell>
+                            <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Branch</TableCell>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Status</TableCell>
                             <TableCell align="right" sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Actions</TableCell>
                         </TableRow>
@@ -191,6 +246,9 @@ const UserList = () => {
                                 </TableCell>
                                 <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <Chip label={typeof user.role === 'object' ? user.role?.roleName : user.role} size="small" color={getRoleColor(user.role)} variant="outlined" />
+                                </TableCell>
+                                <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <Typography variant="body2" sx={{ color: '#fff' }}>{user.branch ? user.branch.name : 'Unassigned'}</Typography>
                                 </TableCell>
                                 <TableCell sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <Chip label={user.status} size="small" color={getStatusColor(user.status)} />

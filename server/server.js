@@ -10,6 +10,7 @@ import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
 import discountRoutes from './routes/discountRoutes.js';
+import chatbotRoutes from './routes/chatbotRoutes.js';
 import saleRoutes from './routes/saleRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
@@ -21,7 +22,15 @@ import supplierRoutes from './routes/supplierRoutes.js';
 import settingRoutes from './routes/settingRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import invoiceRoutes from './routes/invoiceRoutes.js';
+import branchRoutes from './routes/branchRoutes.js';
 import Role from './model/Role.js';
+import Branch from './model/Branch.js';
+import Product from './model/Product.js';
+import Sale from './model/Sale.js';
+import Invoice from './model/Invoice.js';
+import PurchaseOrder from './model/PurchaseOrder.js';
+import PurchaseReturn from './model/PurchaseReturn.js';
+import InventoryLog from './model/InventoryLog.js';
 import Permission from './model/Permission.js';
 import path from 'path';
 
@@ -45,6 +54,7 @@ app.use(express.json());
 // Attach socket.io to req object so controllers can use it
 app.use((req, res, next) => {
     req.io = io;
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
     next();
 });
 
@@ -56,6 +66,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/discounts', discountRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/chat', chatbotRoutes);
 app.use('/api/sales', saleRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/reports', reportRoutes);
@@ -67,6 +78,7 @@ app.use('/api/suppliers', supplierRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/branches', branchRoutes);
 
 // Add a basic route to test server status
 app.get('/', (req, res) => {
@@ -152,12 +164,106 @@ const seedAdmin = async () => {
     }
 };
 
+const migrateBranches = async () => {
+    try {
+        console.log('Running branch migration...');
+        
+        let mainBranch = await Branch.findOne({ name: 'Main Branch' });
+        if (!mainBranch) {
+            mainBranch = await Branch.create({
+                name: 'Main Branch',
+                address: '123 Main Street',
+                status: 'Active'
+            });
+            console.log('✅ Created default Main Branch.');
+        }
+
+        const branchId = mainBranch._id;
+
+        // Update Users
+        const userUpdate = await User.updateMany(
+            { branch: { $exists: false } },
+            { $set: { branch: branchId } }
+        );
+        if (userUpdate.modifiedCount > 0) console.log(`✅ Migrated ${userUpdate.modifiedCount} users to Main Branch.`);
+
+        // Update Sales
+        const saleUpdate = await Sale.updateMany(
+            { branch: { $exists: false } },
+            { $set: { branch: branchId } }
+        );
+        if (saleUpdate.modifiedCount > 0) console.log(`✅ Migrated ${saleUpdate.modifiedCount} sales to Main Branch.`);
+
+        // Update Invoices
+        const invoiceUpdate = await Invoice.updateMany(
+            { branch: { $exists: false } },
+            { $set: { branch: branchId } }
+        );
+
+        // Update POs
+        const poUpdate = await PurchaseOrder.updateMany(
+            { branch: { $exists: false } },
+            { $set: { branch: branchId } }
+        );
+
+        // Update PRs
+        const prUpdate = await PurchaseReturn.updateMany(
+            { branch: { $exists: false } },
+            { $set: { branch: branchId } }
+        );
+
+        // Update InventoryLogs
+        const logUpdate = await InventoryLog.updateMany(
+            { branch: { $exists: false } },
+            { $set: { branch: branchId } }
+        );
+
+        // Update Products: ensure Main Branch branchData exists
+        const products = await Product.find({ $or: [{ branchData: { $exists: false } }, { branchData: { $size: 0 } }] });
+        let productMigratedCount = 0;
+        for (const p of products) {
+            p.branchData.push({
+                branch: branchId,
+                sellingPrice: p.sellingPrice || 0,
+                stock: p.stock || 0,
+                reservedStock: p.reservedStock || 0,
+                damagedStock: p.damagedStock || 0
+            });
+            await p.save();
+            productMigratedCount++;
+        }
+        if (productMigratedCount > 0) console.log(`✅ Migrated ${productMigratedCount} products to use branchData array.`);
+
+        // Cleanup: remove phantom branchData entries (sellingPrice = 0, not Main Branch)
+        // These were created by a bug in the old ProductDialog that pre-populated all branches
+        const allProducts = await Product.find({ 'branchData.1': { $exists: true } }); // products with >1 branchData
+        let cleanedCount = 0;
+        for (const p of allProducts) {
+            const before = p.branchData.length;
+            p.branchData = p.branchData.filter(b => {
+                const isMainBranch = b.branch && b.branch.toString() === branchId.toString();
+                const hasRealPrice = b.sellingPrice > 0;
+                return isMainBranch || hasRealPrice; // keep Main Branch always; keep others only if configured
+            });
+            if (p.branchData.length !== before) {
+                await p.save();
+                cleanedCount++;
+            }
+        }
+        if (cleanedCount > 0) console.log(`✅ Cleaned phantom branchData entries from ${cleanedCount} products.`);
+
+    } catch (e) {
+        console.error('❌ Error during branch migration:', e);
+    }
+};
+
 const PORT = process.env.PORT || 5000;
 
 // Connect to Database, then Start Server
 connectDB().then(async () => {
     await runSeeder();
     await seedAdmin(); 
+    await migrateBranches();
     
     io.on('connection', (socket) => {
         console.log('A user connected via socket.io:', socket.id);

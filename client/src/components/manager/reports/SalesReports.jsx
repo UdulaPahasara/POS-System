@@ -21,7 +21,7 @@ ChartJS.register(
   Legend
 );
 
-const SalesReports = () => {
+const SalesReports = ({ selectedBranchId }) => {
     const [interval, setInterval] = useState('daily');
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -30,7 +30,7 @@ const SalesReports = () => {
         const fetchSales = async () => {
             setLoading(true);
             try {
-                const result = await reportsApi.getSalesReport({ interval });
+                const result = await reportsApi.getSalesReport({ interval, branchId: selectedBranchId });
                 if (result) {
                     setData(result);
                 }
@@ -41,7 +41,7 @@ const SalesReports = () => {
             }
         };
         fetchSales();
-    }, [interval]);
+    }, [interval, selectedBranchId]);
 
     const chartData = {
         labels: data.map(d => d._id),

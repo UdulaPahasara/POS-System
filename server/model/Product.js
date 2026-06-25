@@ -65,8 +65,19 @@ const productSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    branchData: [{
+        branch: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' },
+        sellingPrice: { type: Number, min: 0 },
+        stock: { type: Number, default: 0 },
+        reservedStock: { type: Number, default: 0 },
+        damagedStock: { type: Number, default: 0 }
+    }],
     imageUrl: {
         type: String
+    },
+    isActive: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true

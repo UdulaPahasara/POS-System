@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema({
     ref: 'Role',
     required: true
   },
+  branch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch'
+  },
   profilePic: { type: String, default: '' },
   resetPasswordToken: { type: String },
   resetPasswordExpire: { type: Date }

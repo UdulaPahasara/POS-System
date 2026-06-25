@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import { reportsApi } from '../../../services/reportsApi';
 
-const ProductReports = () => {
+const ProductReports = ({ selectedBranchId }) => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const data = await reportsApi.getProductReport();
+                const data = await reportsApi.getProductReport({ branchId: selectedBranchId });
                 if (data) setData(data);
             } catch (error) {
                 console.error("Error fetching product reports", error);
@@ -18,7 +18,7 @@ const ProductReports = () => {
             }
         };
         fetchProducts();
-    }, []);
+    }, [selectedBranchId]);
 
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
     if (!data) return <Typography color="error">Failed to load product data.</Typography>;

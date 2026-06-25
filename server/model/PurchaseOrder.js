@@ -29,6 +29,11 @@ const purchaseOrderSchema = new mongoose.Schema({
         ref: 'Supplier',
         required: true
     },
+    branch: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Branch',
+        required: true
+    },
     items: [purchaseOrderItemSchema],
     totalCost: {
         type: Number,

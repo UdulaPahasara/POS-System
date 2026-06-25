@@ -6,6 +6,11 @@ const inventoryLogSchema = new mongoose.Schema({
         required: true,
         ref: 'Product'
     },
+    branch: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        ref: 'Branch'
+    },
     action: {
         type: String,
         required: true,

@@ -10,6 +10,7 @@ import { useNotifications } from '../../../context/NotificationContext';
 import { suppliersApi } from '../../../services/suppliersApi';
 import { categoriesApi } from '../../../services/categoriesApi';
 import { productsApi } from '../../../services/productsApi';
+import { branchesApi } from '../../../services/branchesApi';
 
 const SupplierList = () => {
     const [suppliers, setSuppliers] = useState([]);
@@ -19,10 +20,15 @@ const SupplierList = () => {
     const [supplierHistory, setSupplierHistory] = useState([]);
     const [categories, setCategories] = useState([]);
     const [products, setProducts] = useState([]);
+    const [branches, setBranches] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
     const [currentId, setCurrentId] = useState(null);
     
-    const defaultForm = { supplierName: '', category: '', items: [], contactPerson: '', phone: '', email: '', address: '' };
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const isAdmin = user?.role?.roleName === 'Admin' || user?.role === 'Admin' || user?.role?.roleName === 'Super Admin';
+
+    const defaultForm = { supplierName: '', category: '', branches: [], items: [], contactPerson: '', phone: '', email: '', address: '' };
     const [formData, setFormData] = useState(defaultForm);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -53,11 +59,21 @@ const SupplierList = () => {
         }
     };
 
+    const fetchBranches = async () => {
+        try {
+            const data = await branchesApi.getAllBranches();
+            if (data) setBranches(data);
+        } catch (error) {
+            console.error('Error fetching branches:', error);
+        }
+    };
+
     useEffect(() => {
         fetchSuppliers();
         fetchCategories();
         fetchProducts();
-    }, []);
+        if (isAdmin) fetchBranches();
+    }, [isAdmin]);
 
     const { socket } = useNotifications();
     useEffect(() => {
@@ -80,6 +96,7 @@ const SupplierList = () => {
             setFormData({ 
                 supplierName: supplier.supplierName || '', 
                 category: supplier.category?._id || supplier.category || '',
+                branches: supplier.branches?.map(b => b._id || b) || [],
                 items: supplier.items?.map(i => i._id || i) || [],
                 contactPerson: supplier.contactPerson || '', 
                 phone: supplier.phone || '', 
@@ -145,11 +162,25 @@ const SupplierList = () => {
 
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4" sx={{ color: '#fff', fontWeight: 600 }}>Suppliers</Typography>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()} sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>
-                    Add Supplier
-                </Button>
+            <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' }, 
+                justifyContent: 'space-between', 
+                alignItems: { xs: 'stretch', sm: 'center' },
+                gap: 2,
+                mb: 3 
+            }}>
+                <Typography 
+                    variant="h4" 
+                    sx={{ color: '#fff', fontWeight: 600, fontSize: { xs: '1.75rem', sm: '2.125rem' } }}
+                >
+                    Suppliers
+                </Typography>
+                {isAdmin && (
+                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpen()} sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>
+                        Add Supplier
+                    </Button>
+                )}
             </Box>
 
             <TableContainer component={Paper} sx={{ 
@@ -200,8 +231,12 @@ const SupplierList = () => {
                                     <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{sup.email || 'N/A'}</TableCell>
                                     <TableCell align="right" sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                         <IconButton onClick={() => handleViewHistory(sup)} sx={{ color: '#10b981' }} size="small" title="View History"><HistoryIcon fontSize="small" /></IconButton>
-                                        <IconButton onClick={() => handleOpen(sup)} sx={{ color: '#60a5fa' }} size="small" title="Edit"><EditIcon fontSize="small" /></IconButton>
-                                        <IconButton onClick={() => handleDeleteClick(sup._id)} sx={{ color: '#ef4444' }} size="small" title="Delete"><DeleteIcon fontSize="small" /></IconButton>
+                                        {isAdmin && (
+                                            <>
+                                                <IconButton onClick={() => handleOpen(sup)} sx={{ color: '#60a5fa' }} size="small" title="Edit"><EditIcon fontSize="small" /></IconButton>
+                                                <IconButton onClick={() => handleDeleteClick(sup._id)} sx={{ color: '#ef4444' }} size="small" title="Delete"><DeleteIcon fontSize="small" /></IconButton>
+                                            </>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                                 </Fade>
@@ -253,6 +288,23 @@ const SupplierList = () => {
                     </Box>
                     <Box sx={{ mb: 2 }}>
                         <FormControl fullWidth sx={inputStyles}>
+                            <InputLabel id="branches-select-label">Whitelisted Branches</InputLabel>
+                            <Select
+                                labelId="branches-select-label"
+                                multiple
+                                value={formData.branches}
+                                label="Whitelisted Branches"
+                                onChange={(e) => setFormData({...formData, branches: e.target.value})}
+                                renderValue={(selected) => selected.map(id => branches.find(b => b._id === id)?.name).filter(Boolean).join(', ')}
+                            >
+                                {branches.map(branch => (
+                                    <MenuItem key={branch._id} value={branch._id}>{branch.name}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
+                    <Box sx={{ mb: 2 }}>
+                        <FormControl fullWidth sx={inputStyles}>
                             <InputLabel id="items-select-label">Items (Products)</InputLabel>
                             <Select
                                 labelId="items-select-label"
@@ -260,10 +312,13 @@ const SupplierList = () => {
                                 value={formData.items}
                                 label="Items (Products)"
                                 onChange={(e) => setFormData({...formData, items: e.target.value})}
-                                renderValue={(selected) => selected.map(id => products.find(p => p._id === id)?.name).filter(Boolean).join(', ')}
+                                renderValue={(selected) => selected.map(id => products.find(p => String(p._id) === String(id))?.name).filter(Boolean).join(', ')}
                             >
                                 {(formData.category 
-                                    ? products.filter(p => (p.category?._id || p.category) === formData.category)
+                                    ? products.filter(p => {
+                                        const catId = p.category?._id || p.category;
+                                        return String(catId) === String(formData.category);
+                                    })
                                     : products
                                 ).map(prod => (
                                     <MenuItem key={prod._id} value={prod._id}>{prod.name}</MenuItem>

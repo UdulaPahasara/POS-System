@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import { useNotifications } from '../../../context/NotificationContext';
 import { reportsApi } from '../../../services/reportsApi';
+import { branchesApi } from '../../../services/branchesApi';
 
 // Register ChartJS modules
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
@@ -82,6 +83,8 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [paymentFilter, setPaymentFilter] = useState('all');
+    const [branches, setBranches] = useState([]);
+    const [selectedBranchId, setSelectedBranchId] = useState('');
 
     // Get user role
     const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
@@ -91,7 +94,7 @@ const Dashboard = () => {
 
     const fetchDashboardStats = async () => {
         try {
-            const data = await reportsApi.getDashboardStats(paymentFilter);
+            const data = await reportsApi.getDashboardStats(paymentFilter, selectedBranchId);
             setStats(data);
             setLoading(false);
         } catch (err) {
@@ -101,9 +104,22 @@ const Dashboard = () => {
         }
     };
 
+    const fetchBranches = async () => {
+        try {
+            const data = await branchesApi.getAllBranches();
+            if (data) setBranches(data);
+        } catch (error) {
+            console.error('Error fetching branches:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (userRole === 'Admin') fetchBranches();
+    }, [userRole]);
+
     useEffect(() => {
         fetchDashboardStats();
-    }, [paymentFilter]);
+    }, [paymentFilter, selectedBranchId]);
 
     const { socket } = useNotifications();
     useEffect(() => {
@@ -150,9 +166,31 @@ const Dashboard = () => {
 
     return (
         <Box sx={{ fontFamily: 'Poppins, sans-serif' }}>
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: '#fff', mb: 1 }}>Dashboard Overview</Typography>
-                <Typography variant="body2" sx={{ color: '#94a3b8' }}>Here's what's happening with your store today.</Typography>
+            <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                <Box>
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#fff', mb: 1 }}>Dashboard Overview</Typography>
+                    <Typography variant="body2" sx={{ color: '#94a3b8' }}>Here's what's happening with your store today.</Typography>
+                </Box>
+                {userRole === 'Admin' && (
+                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                        <Select
+                            value={selectedBranchId}
+                            onChange={(e) => setSelectedBranchId(e.target.value)}
+                            displayEmpty
+                            sx={{ 
+                                color: '#fff', 
+                                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' },
+                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' },
+                                '& .MuiSvgIcon-root': { color: '#fff' }
+                            }}
+                        >
+                            <MenuItem value="">All Branches / Global</MenuItem>
+                            {branches.map(b => (
+                                <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                )}
             </Box>
 
             {/* Summary Cards */}

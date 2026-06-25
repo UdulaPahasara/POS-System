@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 // @access  Private
 export const getUserProfile = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).select('-password').populate('role', 'roleName');
+        const user = await User.findById(req.user._id).select('-password').populate('role', 'roleName').populate('branch');
         if (user) {
             res.json(user);
         } else {
@@ -48,7 +48,7 @@ export const updateUserProfile = async (req, res) => {
             }
 
             const updatedUser = await user.save();
-            const populatedUser = await User.findById(updatedUser._id).select('-password').populate('role', 'roleName');
+            const populatedUser = await User.findById(updatedUser._id).select('-password').populate('role', 'roleName').populate('branch');
             
             if (req.io) req.io.emit('data_updated', { type: 'USER' });
             
@@ -67,7 +67,18 @@ export const updateUserProfile = async (req, res) => {
 // @access  Private (Admin)
 export const getUsers = async (req, res) => {
     try {
-        const users = await User.find({}).select('-password').populate('role', 'roleName'); // Exclude password, populate role
+        let branchId = null;
+
+        if (req.query.branchId && req.query.branchId !== 'undefined' && req.query.branchId !== 'global') {
+            branchId = req.query.branchId;
+        }
+
+        const query = {};
+        if (branchId) {
+            query.branch = branchId;
+        }
+
+        const users = await User.find(query).select('-password').populate('role', 'roleName').populate('branch'); // Exclude password, populate role and branch
         res.json(users);
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -119,6 +130,7 @@ export const createUser = async (req, res) => {
             password: hashedPassword,
             phone,
             role: roleId,
+            branch: req.body.branch || null,
             status: status || 'Active'
         });
 
@@ -129,6 +141,7 @@ export const createUser = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
+                branch: user.branch,
                 status: user.status
             });
         } else {
@@ -154,6 +167,7 @@ export const updateUser = async (req, res) => {
         user.username = req.body.username || user.username;
         user.email = req.body.email || user.email;
         user.phone = req.body.phone !== undefined ? req.body.phone : user.phone;
+        user.branch = req.body.branch !== undefined ? req.body.branch : user.branch;
         
         if (req.body.role) {
             const mongoose = await import('mongoose');
@@ -180,6 +194,7 @@ export const updateUser = async (req, res) => {
             username: updatedUser.username,
             email: updatedUser.email,
             role: updatedUser.role,
+            branch: updatedUser.branch,
             status: updatedUser.status
         });
     } catch (error) {
@@ -204,11 +219,11 @@ export const deleteUser = async (req, res) => {
             return res.status(400).json({ message: 'You cannot delete your own account' });
         }
 
-        await User.deleteOne({ _id: user._id });
+        await User.findByIdAndDelete(req.params.id);
         if (req.io) req.io.emit('data_updated', { type: 'USER' });
         res.json({ message: 'User removed completely' });
     } catch (error) {
         console.error('Error deleting user:', error);
-        res.status(500).json({ message: 'Server error deleting user' });
+        res.status(500).json({ message: 'Server error deleting user', error: error.message });
     }
 };

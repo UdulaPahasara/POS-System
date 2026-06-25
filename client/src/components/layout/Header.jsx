@@ -298,9 +298,16 @@ const AdminHeader = ({ handleDrawerToggle }) => {
                                     )}
                                 </Box>
                                 <Box sx={{ flex: 1 }}>
-                                    <Typography variant="body2" sx={{ fontWeight: notif.isRead ? 500 : 700, color: notif.type === 'error' ? '#ef4444' : '#0f172a', lineHeight: 1.3, mb: 0.5 }}>
-                                        {notif.title}
-                                    </Typography>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: notif.isRead ? 500 : 700, color: notif.type === 'error' ? '#ef4444' : '#0f172a', lineHeight: 1.3 }}>
+                                            {notif.title}
+                                        </Typography>
+                                        {notif.branch && (
+                                            <Typography variant="caption" sx={{ color: '#3b82f6', fontWeight: 600, bgcolor: '#eff6ff', px: 1, py: 0.2, borderRadius: 1, ml: 1, whiteSpace: 'nowrap' }}>
+                                                {notif.branch.name}
+                                            </Typography>
+                                        )}
+                                    </Box>
                                     <Typography variant="caption" sx={{ color: '#475569', display: 'block', lineHeight: 1.4 }}>
                                         {notif.message}
                                     </Typography>

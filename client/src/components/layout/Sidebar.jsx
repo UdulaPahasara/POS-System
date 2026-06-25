@@ -13,7 +13,8 @@ import {
     Assessment as AssessmentIcon,
     Business as SupplierIcon,
     AssignmentReturn as ReturnIcon,
-    Description as InvoiceIcon
+    Description as InvoiceIcon,
+    Store as StoreIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -21,11 +22,12 @@ const rawNavItems = [
     { title: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', roles: ['Admin', 'Manager'] },
     { title: 'Invoices', icon: <InvoiceIcon />, path: '/invoices', roles: ['Admin', 'Manager'] },
     { title: 'Inventory Dashboard', icon: <DashboardIcon />, path: '/inventory-dashboard', roles: ['Inventory Staff'] },
+    { title: 'Branches', icon: <StoreIcon />, path: '/branches', roles: ['Admin'] },
     { title: 'Categories', icon: <CategoryIcon />, path: '/categories', roles: ['Admin'] },
     { title: 'Products', icon: <ProductIcon/>, path: '/products', roles: ['Admin'] },
     { title: 'Purchase Orders', icon: <AssessmentIcon />, path: '/purchase-orders', roles: ['Manager', 'Inventory Staff'] },
     { title: 'Purchase Returns', icon: <ReturnIcon />, path: '/purchase-returns', roles: ['Manager', 'Inventory Staff'] },
-    { title: 'Suppliers', icon: <SupplierIcon />, path: '/suppliers', roles: ['Manager'] },
+    { title: 'Suppliers', icon: <SupplierIcon />, path: '/suppliers', roles: ['Admin', 'Manager'] },
     { title: 'Inventory', icon: <InventoryIcon />, path: '/inventory', roles: ['Admin', 'Manager', 'Inventory Staff'] },
     { title: 'Reports', icon: <AssessmentIcon />, path: '/reports', roles: ['Admin', 'Manager'] },
     { title: 'Customers', icon: <CustomerIcon />, path: '/customers', roles: ['Manager', 'Cashier'] },
@@ -99,10 +101,12 @@ const AdminSidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
                                 mb: 1,
                                 bgcolor: isActive ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
                                 color: isActive ? '#60a5fa' : '#94a3b8',
-                                '&:hover': {
-                                    bgcolor: 'rgba(59, 130, 246, 0.25)',
-                                    color: '#fff',
-                                    '& .MuiListItemIcon-root': { color: '#fff' }
+                                '@media (hover: hover)': {
+                                    '&:hover': {
+                                        bgcolor: 'rgba(59, 130, 246, 0.25)',
+                                        color: '#fff',
+                                        '& .MuiListItemIcon-root': { color: '#fff' }
+                                    }
                                 }
                             }}
                         >

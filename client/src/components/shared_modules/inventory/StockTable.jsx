@@ -9,7 +9,7 @@ import StockAdjustDialog from './StockAdjustDialog';
 import { useNotifications } from '../../../context/NotificationContext';
 import { productsApi } from '../../../services/productsApi';
 
-const StockTable = () => {
+const StockTable = ({ selectedBranchId }) => {
     const [products, setProducts] = useState([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -19,7 +19,7 @@ const StockTable = () => {
 
     const fetchProducts = async () => {
         try {
-            const data = await productsApi.getAllProducts();
+            const data = await productsApi.getAllProducts(selectedBranchId);
             if (data) setProducts(data);
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -28,7 +28,7 @@ const StockTable = () => {
 
     useEffect(() => {
         fetchProducts();
-    }, []);
+    }, [selectedBranchId]);
 
     const { socket } = useNotifications();
     useEffect(() => {

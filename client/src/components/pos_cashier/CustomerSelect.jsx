@@ -111,7 +111,6 @@ const CustomerSelect = ({ open, onClose, onSelect }) => {
                         <List dense sx={{ maxHeight: '250px', overflowY: 'auto' }}>
                             {customers.map(c => (
                                 <ListItem 
-                                    button={false}
                                     key={c._id} 
                                     secondaryAction={
                                         <IconButton 

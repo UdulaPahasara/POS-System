@@ -3,14 +3,14 @@ import { Box, Typography, Paper, Grid, CircularProgress, Table, TableBody, Table
 import { Inventory as InventoryIcon, Warning as WarningIcon } from '@mui/icons-material';
 import { reportsApi } from '../../../services/reportsApi';
 
-const InventoryReports = () => {
+const InventoryReports = ({ selectedBranchId }) => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchInventory = async () => {
             try {
-                const data = await reportsApi.getInventoryReport();
+                const data = await reportsApi.getInventoryReport({ branchId: selectedBranchId });
                 if (data) setData(data);
             } catch (error) {
                 console.error("Error fetching inventory reports", error);
@@ -19,7 +19,7 @@ const InventoryReports = () => {
             }
         };
         fetchInventory();
-    }, []);
+    }, [selectedBranchId]);
 
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
     if (!data) return <Typography color="error">Failed to load inventory data.</Typography>;

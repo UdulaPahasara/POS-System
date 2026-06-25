@@ -6,7 +6,22 @@ import Notification from '../model/Notification.js';
 
 export const getSuppliers = async (req, res) => {
     try {
-        const suppliers = await Supplier.find().populate('category', 'name');
+        let isAdmin = false;
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
+        }
+
+        let query = {};
+        if (!isAdmin && req.user && req.user.branch) {
+            query.$or = [
+                { branches: req.user.branch },
+                { branches: { $exists: false } },
+                { branches: { $size: 0 } }
+            ];
+        }
+
+        const suppliers = await Supplier.find(query).populate('category', 'name').populate('branches', 'name');
         res.json(suppliers);
     } catch (error) {
         res.status(500).json({ message: 'Server error' });

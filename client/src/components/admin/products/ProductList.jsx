@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { 
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, IconButton, Button,
-    Chip, InputAdornment, TextField, Avatar, Grid,
+    Chip, InputAdornment, TextField, Avatar, Grid, MenuItem,
     Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
     Snackbar, Alert, Fade
 } from '@mui/material';
@@ -23,6 +23,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useNotifications } from '../../../context/NotificationContext';
 import { productsApi } from '../../../services/productsApi';
 import { categoriesApi } from '../../../services/categoriesApi';
+import { branchesApi } from '../../../services/branchesApi';
 
 const ProductList = () => {
     const location = useLocation();
@@ -32,6 +33,12 @@ const ProductList = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [categories, setCategories] = useState([]);
+    
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const isAdmin = user?.role?.roleName === 'Admin' || user?.role === 'Admin';
+    const [branches, setBranches] = useState([]);
+    const [selectedBranchId, setSelectedBranchId] = useState('global');
     
     // New states for Delete Dialog and Snackbar
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -55,7 +62,7 @@ const ProductList = () => {
 
     const fetchProducts = async () => {
         try {
-            const data = await productsApi.getAllProducts();
+            const data = await productsApi.getAllProducts(selectedBranchId);
             if (data) setProducts(data);
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -71,10 +78,20 @@ const ProductList = () => {
         }
     };
 
+    const fetchBranches = async () => {
+        try {
+            const data = await branchesApi.getAllBranches();
+            if (data) setBranches(data);
+        } catch (error) {
+            console.error('Error fetching branches:', error);
+        }
+    };
+
     useEffect(() => {
         fetchProducts();
         fetchCategories();
-    }, []);
+        if (isAdmin) fetchBranches();
+    }, [selectedBranchId]);
 
     const { socket } = useNotifications();
     useEffect(() => {
@@ -136,16 +153,25 @@ const ProductList = () => {
     const handleSubmit = async () => {
         try {
             const data = new FormData();
+            // Only save branchData entries the user explicitly configured (sellingPrice > 0)
+            const validBranchData = (formData.branchData || []).filter(b => b.sellingPrice > 0);
+            // Derive effective global sellingPrice from branchData (required by schema)
+            const effectiveSellingPrice = formData.sellingPrice || validBranchData[0]?.sellingPrice || 0;
+
             Object.keys(formData).forEach(key => {
-                if (key !== '_id' && key !== 'id' && formData[key] !== null && formData[key] !== undefined) {
+                if (key === 'branchData') {
+                    data.append(key, JSON.stringify(validBranchData));
+                } else if (key === 'sellingPrice') {
+                    data.append(key, effectiveSellingPrice);
+                } else if (key !== '_id' && key !== 'id' && formData[key] !== null && formData[key] !== undefined) {
                     data.append(key, formData[key]);
                 }
             });
 
             if (isEditing) {
-                await productsApi.updateProduct(formData._id, data);
+                await productsApi.updateProduct(formData._id, data, selectedBranchId);
             } else {
-                await productsApi.createProduct(data);
+                await productsApi.createProduct(data, selectedBranchId);
             }
 
             fetchProducts();
@@ -174,9 +200,10 @@ const ProductList = () => {
     const confirmDelete = async () => {
         if (!productToDelete) return;
         try {
-            await productsApi.deleteProduct(productToDelete);
+            // Pass selectedBranchId so deletion only removes this branch, not the whole product
+            await productsApi.deleteProduct(productToDelete, selectedBranchId);
             fetchProducts();
-            setSnackbar({ open: true, message: 'Product deleted successfully!', severity: 'success' });
+            setSnackbar({ open: true, message: selectedBranchId ? 'Product removed from this branch!' : 'Product deleted successfully!', severity: 'success' });
         } catch (error) {
             console.error('Error deleting product:', error);
             setSnackbar({ open: true, message: error.message || 'Server error deleting product', severity: 'error' });
@@ -271,8 +298,20 @@ const ProductList = () => {
 
     return (
         <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h4" sx={{ color: '#fff', fontWeight: 600 }}>Products</Typography>
+            <Box sx={{ 
+                display: 'flex', 
+                flexDirection: { xs: 'column', sm: 'row' }, 
+                justifyContent: 'space-between', 
+                alignItems: { xs: 'stretch', sm: 'center' },
+                gap: 2,
+                mb: 3 
+            }}>
+                <Typography 
+                    variant="h4" 
+                    sx={{ color: '#fff', fontWeight: 600, fontSize: { xs: '1.75rem', sm: '2.125rem' } }}
+                >
+                    Products
+                </Typography>
                 <Button 
                     variant="contained" 
                     startIcon={<AddIcon sx={{ mr: { xs: -1, sm: 0 } }} />}
@@ -293,7 +332,27 @@ const ProductList = () => {
             </Box>
 
             <Paper sx={{ p: 2, bgcolor: '#1e293b', borderRadius: 2, mb: 3 }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '7fr 3fr' }, gap: 2 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: isAdmin ? '2fr 5fr 3fr' : '7fr 3fr' }, gap: 2 }}>
+                    {isAdmin && (
+                        <TextField
+                            select
+                            fullWidth
+                            value={selectedBranchId}
+                            onChange={(e) => setSelectedBranchId(e.target.value)}
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    color: '#fff',
+                                    bgcolor: 'rgba(255,255,255,0.05)',
+                                    '& fieldset': { border: 'none' }
+                                }
+                            }}
+                        >
+                            <MenuItem value="global">All Branches / Global</MenuItem>
+                            {branches.map(b => (
+                                <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>
+                            ))}
+                        </TextField>
+                    )}
                     <TextField
                         fullWidth
                         placeholder="Search by product name, SKU, or Category..."
@@ -381,9 +440,19 @@ const ProductList = () => {
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Product Name</TableCell>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>SKU</TableCell>
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Category</TableCell>
-                            <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Price</TableCell>
+                            {/* Branch selected: show Price column */}
+                            {selectedBranchId !== 'global' && (
+                                <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Price</TableCell>
+                            )}
                             <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Stock</TableCell>
-                            <TableCell align="right" sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Actions</TableCell>
+                            {/* Global view: show Available In column */}
+                            {isAdmin && selectedBranchId === 'global' && (
+                                <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Available In</TableCell>
+                            )}
+                            {/* Branch selected: show Actions column */}
+                            {selectedBranchId !== 'global' && (
+                                <TableCell align="right" sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Actions</TableCell>
+                            )}
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -420,7 +489,10 @@ const ProductList = () => {
                                 <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <Chip label={product.category?.name || (typeof product.category === 'string' ? product.category : 'Unknown')} size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }} />
                                 </TableCell>
-                                <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>LKR {product.sellingPrice}</TableCell>
+                                {/* Branch selected: show Price cell */}
+                                {selectedBranchId !== 'global' && (
+                                    <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>LKR {product.sellingPrice}</TableCell>
+                                )}
                                 <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <Chip 
                                         label={product.stock} 
@@ -428,17 +500,39 @@ const ProductList = () => {
                                         color={product.stock <= product.reorderLevel ? "error" : "success"}
                                     />
                                 </TableCell>
-                                <TableCell align="right" sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <IconButton onClick={() => handleOpenBarcode(product)} sx={{ color: '#a855f7' }} size="small" title="Print Barcode">
-                                        <BarcodeIcon fontSize="small" />
-                                    </IconButton>
-                                    <IconButton onClick={() => handleOpenEdit(product)} sx={{ color: '#60a5fa' }} size="small">
-                                        <EditIcon fontSize="small" />
-                                    </IconButton>
-                                    <IconButton onClick={() => handleOpenDeleteDialog(product._id)} sx={{ color: '#ef4444' }} size="small">
-                                        <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                </TableCell>
+                                {/* Global: Available In chips */}
+                                {isAdmin && selectedBranchId === 'global' && (
+                                    <TableCell sx={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                            {product.branchData && product.branchData.map(b => {
+                                                const branchRef = b.branch;
+                                                const brName = branchRef?.name || branches.find(br => br._id === (branchRef?._id || branchRef))?.name;
+                                                return brName ? (
+                                                    <Chip
+                                                        key={b._id || brName}
+                                                        label={brName}
+                                                        size="small"
+                                                        sx={{ bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', fontSize: '0.7rem', fontWeight: 600 }}
+                                                    />
+                                                ) : null;
+                                            })}
+                                        </Box>
+                                    </TableCell>
+                                )}
+                                {/* Branch selected: Action buttons */}
+                                {selectedBranchId !== 'global' && (
+                                    <TableCell align="right" sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <IconButton onClick={() => handleOpenBarcode(product)} sx={{ color: '#a855f7' }} size="small" title="Print Barcode">
+                                            <BarcodeIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton onClick={() => handleOpenEdit(product)} sx={{ color: '#60a5fa' }} size="small">
+                                            <EditIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton onClick={() => handleOpenDeleteDialog(product._id)} sx={{ color: '#ef4444' }} size="small">
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                    </TableCell>
+                                )}
                                 </TableRow>
                             </Fade>
                         ))}
@@ -454,6 +548,8 @@ const ProductList = () => {
                 handleSubmit={handleSubmit}
                 isEditing={isEditing}
                 categories={categories}
+                branches={branches}
+                defaultBranchId={selectedBranchId}
             />
 
             {/* Delete Confirmation Dialog */}

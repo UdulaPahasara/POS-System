@@ -6,6 +6,8 @@ import {
 } from '@mui/material';
 import { Description as InvoiceIcon, ReceiptLong as ReceiptIcon, Close as CloseIcon, Download as DownloadIcon } from '@mui/icons-material';
 import { invoiceApi } from '../../../services/invoiceApi';
+import { branchesApi } from '../../../services/branchesApi';
+import { TextField, MenuItem } from '@mui/material';
 import html2pdf from 'html2pdf.js';
 
 const InvoiceList = () => {
@@ -15,14 +17,32 @@ const InvoiceList = () => {
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [openReceipt, setOpenReceipt] = useState(false);
 
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const isAdmin = user?.role?.roleName === 'Admin' || user?.role === 'Admin';
+    const [branches, setBranches] = useState([]);
+    const [selectedBranchId, setSelectedBranchId] = useState('global');
+
     useEffect(() => {
         fetchInvoices();
-    }, []);
+        if (isAdmin) {
+            fetchBranches();
+        }
+    }, [selectedBranchId]);
+
+    const fetchBranches = async () => {
+        try {
+            const data = await branchesApi.getAllBranches();
+            if (data) setBranches(data);
+        } catch (error) {
+            console.error('Error fetching branches:', error);
+        }
+    };
 
     const fetchInvoices = async () => {
         setLoading(true);
         try {
-            const data = await invoiceApi.getAllInvoices();
+            const data = await invoiceApi.getAllInvoices(selectedBranchId);
             setInvoices(data);
             setError(null);
         } catch (err) {
@@ -63,9 +83,34 @@ const InvoiceList = () => {
 
     return (
         <Box sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 1.5 }}>
-                <InvoiceIcon sx={{ color: '#8b5cf6', fontSize: 32 }} />
-                <Typography variant="h5" sx={{ color: '#fff', fontWeight: 600 }}>Invoices</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <InvoiceIcon sx={{ color: '#8b5cf6', fontSize: 32 }} />
+                    <Typography variant="h5" sx={{ color: '#fff', fontWeight: 600 }}>Invoices</Typography>
+                </Box>
+                {isAdmin && (
+                    <TextField
+                        select
+                        size="small"
+                        value={selectedBranchId}
+                        onChange={(e) => setSelectedBranchId(e.target.value)}
+                        sx={{
+                            width: '250px',
+                            '& .MuiOutlinedInput-root': {
+                                color: '#fff',
+                                bgcolor: 'rgba(255,255,255,0.05)',
+                                '& fieldset': { border: '1px solid rgba(255,255,255,0.1)' },
+                                '&:hover fieldset': { border: '1px solid rgba(255,255,255,0.2)' },
+                            },
+                            '& .MuiSelect-icon': { color: '#94a3b8' }
+                        }}
+                    >
+                        <MenuItem value="global">All Branches / Global</MenuItem>
+                        {branches.map(b => (
+                            <MenuItem key={b._id} value={b._id}>{b.name}</MenuItem>
+                        ))}
+                    </TextField>
+                )}
             </Box>
 
             <TableContainer component={Paper} sx={{ 
@@ -80,6 +125,9 @@ const InvoiceList = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell sx={{ color: '#94a3b8' }}>Invoice Number</TableCell>
+                            {isAdmin && selectedBranchId === 'global' && (
+                                <TableCell sx={{ color: '#94a3b8' }}>Branch</TableCell>
+                            )}
                             <TableCell sx={{ color: '#94a3b8' }}>Date</TableCell>
                             <TableCell sx={{ color: '#94a3b8' }}>Total Amount</TableCell>
                             <TableCell align="right" sx={{ color: '#94a3b8' }}>Actions</TableCell>
@@ -88,7 +136,7 @@ const InvoiceList = () => {
                     <TableBody>
                         {invoices.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={4} align="center" sx={{ color: '#94a3b8', py: 4 }}>No invoices found.</TableCell>
+                                <TableCell colSpan={isAdmin && selectedBranchId === 'global' ? 5 : 4} align="center" sx={{ color: '#94a3b8', py: 4 }}>No invoices found.</TableCell>
                             </TableRow>
                         ) : (
                             invoices.map((inv, index) => (
@@ -106,6 +154,9 @@ const InvoiceList = () => {
                                         }}
                                     >
                                         <TableCell sx={{ color: '#fff', fontWeight: 600 }}>{inv.invoiceNumber}</TableCell>
+                                        {isAdmin && selectedBranchId === 'global' && (
+                                            <TableCell sx={{ color: '#fff' }}>{inv.branch?.name || 'Unknown'}</TableCell>
+                                        )}
                                         <TableCell sx={{ color: '#fff' }}>{new Date(inv.issueDate).toLocaleString()}</TableCell>
                                         <TableCell sx={{ color: '#8b5cf6', fontWeight: 700 }}>LKR {inv.total?.toFixed(2)}</TableCell>
                                         <TableCell align="right">

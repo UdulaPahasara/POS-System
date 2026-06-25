@@ -3,14 +3,14 @@ import { Box, Typography, Paper, CircularProgress, Table, TableBody, TableCell, 
 import { AccountCircle as AccountIcon } from '@mui/icons-material';
 import { reportsApi } from '../../../services/reportsApi';
 
-const CustomerReports = () => {
+const CustomerReports = ({ selectedBranchId }) => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchCustomers = async () => {
             try {
-                const data = await reportsApi.getCustomerReport();
+                const data = await reportsApi.getCustomerReport({ branchId: selectedBranchId });
                 if (data) setData(data);
             } catch (error) {
                 console.error("Error fetching customer reports", error);
@@ -19,7 +19,7 @@ const CustomerReports = () => {
             }
         };
         fetchCustomers();
-    }, []);
+    }, [selectedBranchId]);
 
     if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
     if (!data) return <Typography color="error">Failed to load customer data.</Typography>;

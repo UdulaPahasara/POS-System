@@ -2,34 +2,47 @@ import Sale from '../model/Sale.js';
 import Product from '../model/Product.js';
 import Invoice from '../model/Invoice.js';
 import Customer from '../model/Customer.js';
+import mongoose from 'mongoose';
 
 // @desc    Get Dashboard Overview Stats
 // @route   GET /api/reports/dashboard
 // @access  Private (Admin, Manager)
 export const getDashboardStats = async (req, res) => {
     try {
-        const { paymentFilter = 'all' } = req.query;
+        const { paymentFilter = 'all', branchId } = req.query;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+
+        let branchFilter = {};
+        let isAdmin = false;
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
+        }
+        if (!isAdmin) {
+            if (req.user.branch) branchFilter.branch = new mongoose.Types.ObjectId(req.user.branch);
+        } else if (branchId && mongoose.Types.ObjectId.isValid(branchId)) {
+            branchFilter.branch = new mongoose.Types.ObjectId(branchId);
+        }
 
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
         // 1. Today's Sales
         const todaySales = await Sale.aggregate([
-            { $match: { createdAt: { $gte: today } } },
+            { $match: { createdAt: { $gte: today }, ...branchFilter } },
             { $group: { _id: null, total: { $sum: '$total' } } }
         ]);
         const todayRevenue = todaySales[0]?.total || 0;
 
         // 2. Monthly Revenue
         const monthSales = await Sale.aggregate([
-            { $match: { createdAt: { $gte: startOfMonth } } },
+            { $match: { createdAt: { $gte: startOfMonth }, ...branchFilter } },
             { $group: { _id: null, total: { $sum: '$total' } } }
         ]);
         const monthlyRevenue = monthSales[0]?.total || 0;
 
         // 3. Monthly Profit (Revenue - COGS)
-        const monthSalesFull = await Sale.find({ createdAt: { $gte: startOfMonth } }).populate('items.product');
+        const monthSalesFull = await Sale.find({ createdAt: { $gte: startOfMonth }, ...branchFilter }).populate('items.product');
         let monthlyCOGS = 0;
         monthSalesFull.forEach(sale => {
             if (sale.items) {
@@ -41,11 +54,51 @@ export const getDashboardStats = async (req, res) => {
         });
         const totalProfit = monthlyRevenue - monthlyCOGS;
 
-        // 4. Items in Stock
-        const stockAgg = await Product.aggregate([
-            { $group: { _id: null, totalStock: { $sum: '$stock' } } }
-        ]);
-        const itemsInStock = stockAgg[0]?.totalStock || 0;
+        // 4. Items in Stock and 7. Low Stock Alerts
+        let itemsInStock = 0;
+        let lowStockItems = [];
+
+        if (branchFilter.branch) {
+            const branchObjectId = branchFilter.branch;
+            
+            const stockAgg = await Product.aggregate([
+                { $unwind: "$branchData" },
+                { $match: { "branchData.branch": branchObjectId } },
+                { $group: { _id: null, totalStock: { $sum: '$branchData.stock' } } }
+            ]);
+            itemsInStock = stockAgg[0]?.totalStock || 0;
+
+            const lowStockRaw = await Product.aggregate([
+                { $unwind: "$branchData" },
+                { $match: { "branchData.branch": branchObjectId } },
+                { $match: { $expr: { $lte: ['$branchData.stock', '$reorderLevel'] } } },
+                { $limit: 5 }
+            ]);
+            lowStockItems = lowStockRaw.map(p => ({
+                name: p.name,
+                sku: p.sku || 'N/A',
+                stock: p.branchData.stock,
+                reorder: p.reorderLevel
+            }));
+        } else {
+            const stockAgg = await Product.aggregate([
+                { $unwind: "$branchData" },
+                { $group: { _id: null, totalStock: { $sum: '$branchData.stock' } } }
+            ]);
+            itemsInStock = stockAgg[0]?.totalStock || 0;
+
+            const lowStockRaw = await Product.aggregate([
+                { $unwind: "$branchData" },
+                { $match: { $expr: { $lte: ['$branchData.stock', '$reorderLevel'] } } },
+                { $limit: 5 }
+            ]);
+            lowStockItems = lowStockRaw.map(p => ({
+                name: p.name,
+                sku: p.sku || 'N/A',
+                stock: p.branchData.stock,
+                reorder: p.reorderLevel
+            }));
+        }
 
         // 5. Revenue Trend (Last 7 Days)
         const sevenDaysAgo = new Date();
@@ -55,7 +108,7 @@ export const getDashboardStats = async (req, res) => {
         const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
         const trendSales = await Sale.aggregate([
-            { $match: { createdAt: { $gte: sevenDaysAgo } } },
+            { $match: { createdAt: { $gte: sevenDaysAgo }, ...branchFilter } },
             {
                 $group: {
                     _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: serverTimezone } },
@@ -85,7 +138,7 @@ export const getDashboardStats = async (req, res) => {
         }
 
         // 6. Recent Transactions
-        const recentTransactionsRaw = await Sale.find().sort({ createdAt: -1 }).limit(5).populate('invoice');
+        const recentTransactionsRaw = await Sale.find(branchFilter).sort({ createdAt: -1 }).limit(5).populate('invoice');
         const recentTransactions = recentTransactionsRaw.map(sale => ({
             id: sale.invoice?.invoiceNumber || sale._id.toString().slice(-6).toUpperCase(),
             customer: sale.customer?.name || 'Walk-in Customer',
@@ -93,18 +146,11 @@ export const getDashboardStats = async (req, res) => {
             status: 'Completed'
         }));
 
-        // 7. Low Stock Alerts
-        const lowStockRaw = await Product.find({ $expr: { $lte: ['$stock', '$reorderLevel'] } }).limit(5);
-        const lowStockItems = lowStockRaw.map(p => ({
-            name: p.name,
-            sku: p.sku || 'N/A',
-            stock: p.stock,
-            reorder: p.reorderLevel
-        }));
+        // 7. Low Stock Alerts (Already computed above)
 
         // 8. Top Selling Product (This Month)
         const topSellingAgg = await Sale.aggregate([
-            { $match: { createdAt: { $gte: startOfMonth } } },
+            { $match: { createdAt: { $gte: startOfMonth }, ...branchFilter } },
             { $unwind: "$items" },
             {
                 $group: {
@@ -122,11 +168,11 @@ export const getDashboardStats = async (req, res) => {
             : { name: 'N/A', quantity: 0 };
 
         // 9. Payment Stats (Cash/Card) based on filter
-        let matchCondition = {};
+        let matchCondition = { ...branchFilter };
         if (paymentFilter === 'today') {
-            matchCondition = { createdAt: { $gte: today } };
+            matchCondition.createdAt = { $gte: today };
         } else if (paymentFilter === 'monthly') {
-            matchCondition = { createdAt: { $gte: startOfMonth } };
+            matchCondition.createdAt = { $gte: startOfMonth };
         }
 
         const paymentStats = await Sale.aggregate([
@@ -167,7 +213,7 @@ export const getDashboardStats = async (req, res) => {
 // @access  Private (Admin/Manager)
 export const getSalesReport = async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
+        const { startDate, endDate, branchId } = req.query;
 
         let query = {};
         if (startDate && endDate) {
@@ -175,6 +221,18 @@ export const getSalesReport = async (req, res) => {
                 $gte: new Date(startDate),
                 $lte: new Date(endDate)
             };
+        }
+
+        let isAdmin = false;
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
+        }
+
+        if (!isAdmin && req.user && req.user.branch) {
+            query.branch = new mongoose.Types.ObjectId(req.user.branch);
+        } else if (branchId && branchId !== 'global' && mongoose.Types.ObjectId.isValid(branchId)) {
+            query.branch = new mongoose.Types.ObjectId(branchId);
         }
 
         const sales = await Sale.find(query).populate('invoice').populate('payments');
@@ -221,7 +279,37 @@ export const getSalesReport = async (req, res) => {
 // @access  Private (Admin/Manager)
 export const getInventoryReport = async (req, res) => {
     try {
-        const products = await Product.find({});
+        const { branchId } = req.query;
+        let products = await Product.find({});
+        
+        let isAdmin = false;
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
+        }
+
+        let effectiveBranchId = branchId;
+        if (!isAdmin && req.user && req.user.branch) {
+            effectiveBranchId = req.user.branch.toString();
+        }
+
+        if (effectiveBranchId && effectiveBranchId !== 'global') {
+            const branchIdStr = effectiveBranchId.toString();
+            products = products
+                .filter(p => p.branchData.some(b => b.branch && b.branch.toString() === branchIdStr))
+                .map(p => {
+                    const pObj = p.toObject();
+                    const bData = p.branchData.find(b => b.branch && b.branch.toString() === branchIdStr);
+                    pObj.stock = bData ? bData.stock : 0;
+                    return pObj;
+                });
+        } else {
+            products = products.map(p => {
+                const pObj = p.toObject();
+                pObj.stock = p.branchData.reduce((acc, b) => acc + (b.stock || 0), 0);
+                return pObj;
+            });
+        }
 
         let totalStockValue = 0;
         let lowStockCount = 0;
@@ -262,14 +350,28 @@ export const getInventoryReport = async (req, res) => {
 // @access  Private (Admin)
 export const getAdvancedSalesReport = async (req, res) => {
     try {
-        const { interval = 'daily' } = req.query; // daily, weekly, monthly, yearly
+        const { interval = 'daily', branchId } = req.query; // daily, weekly, monthly, yearly
 
         let format = '%Y-%m-%d';
         if (interval === 'weekly') format = '%Y-%U';
         if (interval === 'monthly') format = '%Y-%m';
         if (interval === 'yearly') format = '%Y';
 
+        let isAdmin = false;
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
+        }
+
+        let matchStage = {};
+        if (!isAdmin && req.user && req.user.branch) {
+            matchStage.branch = new mongoose.Types.ObjectId(req.user.branch);
+        } else if (branchId && branchId !== 'global' && mongoose.Types.ObjectId.isValid(branchId)) {
+            matchStage.branch = new mongoose.Types.ObjectId(branchId);
+        }
+
         const sales = await Sale.aggregate([
+            { $match: matchStage },
             {
                 $group: {
                     _id: { $dateToString: { format, date: "$createdAt" } },
@@ -293,7 +395,21 @@ export const getAdvancedSalesReport = async (req, res) => {
 // @access  Private (Admin)
 export const getFinancialReport = async (req, res) => {
     try {
-        const sales = await Sale.find({}).populate('items.product');
+        const { branchId } = req.query;
+        
+        let isAdmin = false;
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
+        }
+
+        let query = {};
+        if (!isAdmin && req.user && req.user.branch) {
+            query.branch = new mongoose.Types.ObjectId(req.user.branch);
+        } else if (branchId && branchId !== 'global' && mongoose.Types.ObjectId.isValid(branchId)) {
+            query.branch = new mongoose.Types.ObjectId(branchId);
+        }
+        const sales = await Sale.find(query).populate('items.product');
 
         let totalRevenue = 0;
         let totalCOGS = 0;
@@ -326,7 +442,21 @@ export const getFinancialReport = async (req, res) => {
 // @access  Private (Admin)
 export const getProductReport = async (req, res) => {
     try {
-        const sales = await Sale.find({}).populate('items.product');
+        const { branchId } = req.query;
+        
+        let isAdmin = false;
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
+        }
+
+        let query = {};
+        if (!isAdmin && req.user && req.user.branch) {
+            query.branch = new mongoose.Types.ObjectId(req.user.branch);
+        } else if (branchId && branchId !== 'global' && mongoose.Types.ObjectId.isValid(branchId)) {
+            query.branch = new mongoose.Types.ObjectId(branchId);
+        }
+        const sales = await Sale.find(query).populate('items.product');
 
         const productStats = {};
 
@@ -369,8 +499,23 @@ export const getProductReport = async (req, res) => {
 // @access  Private (Admin)
 export const getCustomerReport = async (req, res) => {
     try {
+        const { branchId } = req.query;
+        let query = { "customer.name": { $exists: true, $ne: null } };
+        
+        let isAdmin = false;
+        if (req.user && req.user.role) {
+            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
+            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
+        }
+
+        if (!isAdmin && req.user && req.user.branch) {
+            query.branch = new mongoose.Types.ObjectId(req.user.branch);
+        } else if (branchId && branchId !== 'global' && mongoose.Types.ObjectId.isValid(branchId)) {
+            query.branch = new mongoose.Types.ObjectId(branchId);
+        }
+
         const allCustomers = await Customer.find({});
-        const sales = await Sale.find({ "customer.name": { $exists: true, $ne: null } });
+        const sales = await Sale.find(query);
 
         const customerStats = {};
 
