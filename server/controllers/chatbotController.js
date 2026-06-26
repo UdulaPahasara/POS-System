@@ -21,16 +21,22 @@ export const chatWithAI = async (req, res) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        const roleName = req.user.role ? (req.user.role.roleName || req.user.role) : null;
+        const isAdmin = roleName === 'Admin' || roleName === 'Super Admin';
+        const branchId = isAdmin ? null : req.user.branch;
+        const branchIdStr = branchId ? (branchId._id ? branchId._id.toString() : branchId.toString()) : null;
+
         // Fetch basic stats
-        const productCount = await Product.countDocuments();
-        const lowStockProducts = await Product.find({ $expr: { $lte: ['$stock', '$reorderLevel'] } }).select('name stock reorderLevel');
+        const productCount = await Product.countDocuments({ isActive: { $ne: false } });
         const customerCount = await Customer.countDocuments();
         
         // Fetch today's sales
-        const todaysSales = await Sale.find({ createdAt: { $gte: today } });
+        let saleMatch = { createdAt: { $gte: today } };
+        if (branchIdStr) saleMatch.branch = branchId;
+        const todaysSales = await Sale.find(saleMatch);
         const todaysRevenue = todaysSales.reduce((acc, sale) => acc + sale.total, 0);
 
-        // Fetch top selling products
+        // Fetch top selling products (Global)
         const topProductAgg = await Sale.aggregate([
             { $unwind: "$items" },
             { $group: { _id: "$items.name", totalSold: { $sum: "$items.quantity" } } },
@@ -43,14 +49,36 @@ export const chatWithAI = async (req, res) => {
             topProductsInfo = topProductAgg.map((p, i) => `${i + 1}. ${p._id} (${p.totalSold} units sold)`).join('\n');
         }
 
+        // Fetch all products to calculate branch-specific stock
+        const allProductsRaw = await Product.find({ isActive: { $ne: false } }).populate('branchData.branch').limit(200);
+        
+        const productsWithStock = allProductsRaw.map(p => {
+            let pStock = 0;
+            let pPrice = p.sellingPrice || 0;
+            if (branchIdStr) {
+                const bData = p.branchData.find(b => {
+                    if (!b.branch) return false;
+                    const bIdStr = b.branch._id ? b.branch._id.toString() : b.branch.toString();
+                    return bIdStr === branchIdStr;
+                });
+                if (bData) {
+                    pStock = bData.stock || 0;
+                    pPrice = bData.sellingPrice || pPrice;
+                }
+            } else {
+                pStock = p.branchData.reduce((acc, b) => acc + (b.stock || 0), 0);
+            }
+            return { name: p.name, stock: pStock, price: pPrice, reorderLevel: p.reorderLevel };
+        });
+
         // Format low stock items for the prompt
+        const lowStockProducts = productsWithStock.filter(p => p.stock <= p.reorderLevel);
         const lowStockInfo = lowStockProducts.length > 0 
             ? lowStockProducts.map(p => `- ${p.name} (Stock: ${p.stock}, Reorder at: ${p.reorderLevel})`).join('\n')
             : 'No items are currently low on stock.';
 
         // Fetch all product details for general inquiries
-        const allProducts = await Product.find({}).select('name sellingPrice stock').limit(200);
-        const productListInfo = allProducts.map(p => `- ${p.name} (Price: LKR ${p.sellingPrice}, Stock: ${p.stock})`).join('\n');
+        const productListInfo = productsWithStock.map(p => `- ${p.name} (Price: LKR ${p.price}, Stock: ${p.stock})`).join('\n');
 
         // 2. Create the System Prompt
         const systemInstruction = `

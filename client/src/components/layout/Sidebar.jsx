@@ -30,7 +30,7 @@ const rawNavItems = [
     { title: 'Suppliers', icon: <SupplierIcon />, path: '/suppliers', roles: ['Admin', 'Manager'] },
     { title: 'Inventory', icon: <InventoryIcon />, path: '/inventory', roles: ['Admin', 'Manager', 'Inventory Staff'] },
     { title: 'Reports', icon: <AssessmentIcon />, path: '/reports', roles: ['Admin', 'Manager'] },
-    { title: 'Customers', icon: <CustomerIcon />, path: '/customers', roles: ['Manager', 'Cashier'] },
+    { title: 'Customers', icon: <CustomerIcon />, path: '/customers', roles: ['Admin', 'Manager', 'Cashier'] },
     { title: 'Employees', icon: <EmployeeIcon />, path: '/employees', roles: ['Admin'] },
     { title: 'Settings', icon: <SettingsIcon />, path: '/settings', roles: ['Admin'] },
 ];

@@ -3,7 +3,7 @@ import {
     Box, Typography, Paper, Table, TableBody, TableCell, 
     TableContainer, TableHead, TableRow, IconButton, Button,
     TextField, Dialog, DialogTitle, DialogContent, DialogActions,
-    Snackbar, Alert, DialogContentText, Select, MenuItem, FormControl, InputLabel, Fade
+    Snackbar, Alert, DialogContentText, Select, MenuItem, FormControl, InputLabel, Fade, Chip
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, History as HistoryIcon } from '@mui/icons-material';
 import { useNotifications } from '../../../context/NotificationContext';
@@ -295,7 +295,23 @@ const SupplierList = () => {
                                 value={formData.branches}
                                 label="Whitelisted Branches"
                                 onChange={(e) => setFormData({...formData, branches: e.target.value})}
-                                renderValue={(selected) => selected.map(id => branches.find(b => b._id === id)?.name).filter(Boolean).join(', ')}
+                                renderValue={(selected) => (
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                        {selected.map(id => {
+                                            const name = branches.find(b => b._id === id)?.name;
+                                            return name ? (
+                                                <Chip 
+                                                    key={id} 
+                                                    label={name} 
+                                                    size="small" 
+                                                    sx={{ color: '#fff', bgcolor: 'rgba(59, 130, 246, 0.2)', '& .MuiChip-deleteIcon': { color: '#94a3b8', '&:hover': { color: '#fff' } } }}
+                                                    onDelete={() => setFormData(prev => ({...prev, branches: prev.branches.filter(b => b !== id)}))}
+                                                    onMouseDown={(e) => e.stopPropagation()} 
+                                                />
+                                            ) : null;
+                                        })}
+                                    </Box>
+                                )}
                             >
                                 {branches.map(branch => (
                                     <MenuItem key={branch._id} value={branch._id}>{branch.name}</MenuItem>
@@ -312,7 +328,23 @@ const SupplierList = () => {
                                 value={formData.items}
                                 label="Items (Products)"
                                 onChange={(e) => setFormData({...formData, items: e.target.value})}
-                                renderValue={(selected) => selected.map(id => products.find(p => String(p._id) === String(id))?.name).filter(Boolean).join(', ')}
+                                renderValue={(selected) => (
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                        {selected.map(id => {
+                                            const name = products.find(p => String(p._id) === String(id))?.name;
+                                            return name ? (
+                                                <Chip 
+                                                    key={id} 
+                                                    label={name} 
+                                                    size="small" 
+                                                    sx={{ color: '#fff', bgcolor: 'rgba(16, 185, 129, 0.2)', '& .MuiChip-deleteIcon': { color: '#94a3b8', '&:hover': { color: '#fff' } } }}
+                                                    onDelete={() => setFormData(prev => ({...prev, items: prev.items.filter(i => String(i) !== String(id))}))}
+                                                    onMouseDown={(e) => e.stopPropagation()} 
+                                                />
+                                            ) : null;
+                                        })}
+                                    </Box>
+                                )}
                             >
                                 {(formData.category 
                                     ? products.filter(p => {

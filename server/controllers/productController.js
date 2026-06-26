@@ -97,7 +97,7 @@ export const createProduct = async (req, res) => {
 // @access  Private
 export const getProducts = async (req, res) => {
     try {
-        let products = await Product.find({})
+        let products = await Product.find({ isActive: { $ne: false } })
             .populate('category', 'name taxRate')
             .populate('branchData.branch', 'name')
             .sort({ createdAt: -1 });
@@ -259,11 +259,12 @@ export const deleteProduct = async (req, res) => {
                 return res.status(404).json({ message: 'Product not found in this branch' });
             }
 
-            // If no branches remain, delete the whole product
+            // If no branches remain, soft delete the whole product
             if (product.branchData.length === 0) {
-                await product.deleteOne();
+                product.isActive = false;
+                await product.save();
                 if (req.io) req.io.emit('data_updated', { type: 'PRODUCT' });
-                return res.json({ message: 'Product removed from branch and fully deleted (no branches remain)' });
+                return res.json({ message: 'Product removed from branch and softly deleted (no branches remain)' });
             }
 
             await product.save();
@@ -271,10 +272,11 @@ export const deleteProduct = async (req, res) => {
             return res.json({ message: 'Product removed from branch successfully' });
         }
 
-        // No branchId: full delete (global admin action)
-        await product.deleteOne();
+        // No branchId: full soft delete (global admin action)
+        product.isActive = false;
+        await product.save();
         if (req.io) req.io.emit('data_updated', { type: 'PRODUCT' });
-        res.json({ message: 'Product removed' });
+        res.json({ message: 'Product softly removed' });
     } catch (error) {
         console.error('Error deleting product:', error);
         res.status(500).json({ message: 'Server error deleting product' });

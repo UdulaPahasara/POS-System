@@ -62,7 +62,7 @@ function App() {
                     <Route element={<ProtectedRoute allowedRoles={['Admin', 'Manager']} />}>
                         <Route path="suppliers" element={<SupplierList />} />
                     </Route>
-                    <Route element={<ProtectedRoute allowedRoles={['Manager', 'Cashier']} />}>
+                    <Route element={<ProtectedRoute allowedRoles={['Admin', 'Manager', 'Cashier']} />}>
                         <Route path="customers" element={<CustomerList />} />
                     </Route>
                     <Route path="reports" element={<ReportLayout />} />
