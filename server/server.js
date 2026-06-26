@@ -42,13 +42,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: '*', // Adjust this for production
+        origin: process.env.CLIENT_URL || 'http://localhost:5173',
         methods: ['GET', 'POST', 'PUT', 'DELETE']
     }
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
 app.use(express.json());
 
 // Attach socket.io to req object so controllers can use it
