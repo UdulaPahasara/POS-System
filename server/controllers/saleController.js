@@ -44,7 +44,7 @@ export const createSale = async (req, res) => {
             const sellingPrice = product.branchData[bDataIndex].sellingPrice;
 
             if (currentStock < item.quantity) {
-                console.warn(`[Stock Warning] Product ${product.name} is low on stock (${currentStock}). Sale proceeded.`);
+                return res.status(400).json({ message: `Insufficient stock for ${product.name}. Only ${currentStock} available in this branch.` });
             }
 
             const willBeLowStock = (currentStock - item.quantity) <= product.reorderLevel;

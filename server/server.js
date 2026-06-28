@@ -4,6 +4,8 @@ import http from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
 import connectDB from './config/db.js';
 import User from './model/User.js';
 import authRoutes from './routes/authRoutes.js';
@@ -48,6 +50,8 @@ const io = new Server(server, {
 });
 
 // Middleware
+app.use(helmet());
+app.use(mongoSanitize());
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
 app.use(express.json());
 
