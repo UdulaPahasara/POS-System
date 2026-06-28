@@ -202,6 +202,7 @@ const PurchaseOrderList = () => {
         }
 
         const productNames = poItems.map(item => {
+            if (item.productName) return item.productName;
             if (item.product && item.product.name) return item.product.name;
             const prodId = item.product?._id || item.product;
             const prod = globalProducts.find(p => p._id === prodId);

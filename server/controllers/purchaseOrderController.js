@@ -10,6 +10,12 @@ export const updatePurchaseOrder = async (req, res) => {
         const po = await PurchaseOrder.findById(req.params.id);
         if (!po) return res.status(404).json({ message: 'PO not found' });
 
+        // Snapshot product names
+        for (let item of items) {
+            const productDoc = await Product.findById(item.product);
+            item.productName = productDoc ? productDoc.name : 'Unknown Product';
+        }
+
         if (po.status !== 'Pending') {
             return res.status(400).json({ message: `Cannot update PO in ${po.status} status` });
         }
@@ -62,6 +68,12 @@ export const createPurchaseOrder = async (req, res) => {
         const branchId = req.user.branch;
 
         if (!branchId) return res.status(400).json({ message: 'User must be assigned to a branch to create PO' });
+
+        // Snapshot product names
+        for (let item of items) {
+            const productDoc = await Product.findById(item.product);
+            item.productName = productDoc ? productDoc.name : 'Unknown Product';
+        }
 
         const count = await PurchaseOrder.countDocuments();
         const poNumber = `PO-${Date.now().toString().slice(-4)}-${count + 1}`;

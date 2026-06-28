@@ -409,19 +409,40 @@ export const getFinancialReport = async (req, res) => {
         } else if (branchId && branchId !== 'global' && mongoose.Types.ObjectId.isValid(branchId)) {
             query.branch = new mongoose.Types.ObjectId(branchId);
         }
-        const sales = await Sale.find(query).populate('items.product');
-
-        let totalRevenue = 0;
-        let totalCOGS = 0;
-
-        sales.forEach(sale => {
-            totalRevenue += sale.total;
-            sale.items.forEach(item => {
-                if (item.product && item.product.costPrice) {
-                    totalCOGS += (item.product.costPrice * item.quantity);
+        const aggResult = await Sale.aggregate([
+            { $match: query },
+            { $unwind: "$items" },
+            { 
+                $lookup: {
+                    from: "products",
+                    localField: "items.product",
+                    foreignField: "_id",
+                    as: "productData"
                 }
-            });
-        });
+            },
+            { $unwind: { path: "$productData", preserveNullAndEmptyArrays: true } },
+            { 
+                $group: {
+                    _id: "$_id",
+                    saleTotal: { $first: "$total" },
+                    cogsForSale: { 
+                        $sum: { 
+                            $multiply: [ { $ifNull: ["$productData.costPrice", 0] }, "$items.quantity" ] 
+                        } 
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: "$saleTotal" },
+                    totalCOGS: { $sum: "$cogsForSale" }
+                }
+            }
+        ]);
+
+        const totalRevenue = aggResult.length > 0 ? aggResult[0].totalRevenue : 0;
+        const totalCOGS = aggResult.length > 0 ? aggResult[0].totalCOGS : 0;
 
         const grossProfit = totalRevenue - totalCOGS;
 
@@ -456,33 +477,41 @@ export const getProductReport = async (req, res) => {
         } else if (branchId && branchId !== 'global' && mongoose.Types.ObjectId.isValid(branchId)) {
             query.branch = new mongoose.Types.ObjectId(branchId);
         }
-        const sales = await Sale.find(query).populate('items.product');
-
-        const productStats = {};
-
-        sales.forEach(sale => {
-            sale.items.forEach(item => {
-                if (item.product) {
-                    const pid = item.product._id.toString();
-                    if (!productStats[pid]) {
-                        productStats[pid] = {
-                            id: item.product._id,
-                            name: item.product.name,
-                            sku: item.product.sku,
-                            quantitySold: 0,
-                            revenueGenerated: 0
-                        };
-                    }
-                    productStats[pid].quantitySold += item.quantity;
-                    productStats[pid].revenueGenerated += (item.product.sellingPrice * item.quantity);
+        const aggResult = await Sale.aggregate([
+            { $match: query },
+            { $unwind: "$items" },
+            { 
+                $lookup: {
+                    from: "products",
+                    localField: "items.product",
+                    foreignField: "_id",
+                    as: "productData"
                 }
-            });
-        });
+            },
+            { $unwind: "$productData" },
+            {
+                $group: {
+                    _id: "$items.product",
+                    name: { $first: "$productData.name" },
+                    sku: { $first: "$productData.sku" },
+                    sellingPrice: { $first: "$productData.sellingPrice" },
+                    quantitySold: { $sum: "$items.quantity" }
+                }
+            },
+            {
+                $project: {
+                    id: "$_id",
+                    name: 1,
+                    sku: { $ifNull: ["$sku", "N/A"] },
+                    quantitySold: 1,
+                    revenueGenerated: { $multiply: ["$sellingPrice", "$quantitySold"] }
+                }
+            },
+            { $sort: { quantitySold: -1 } }
+        ]);
 
-        const productsArray = Object.values(productStats);
-
-        const topSelling = [...productsArray].sort((a, b) => b.quantitySold - a.quantitySold).slice(0, 10);
-        const slowMoving = [...productsArray].sort((a, b) => a.quantitySold - b.quantitySold).slice(0, 10);
+        const topSelling = aggResult.slice(0, 10);
+        const slowMoving = [...aggResult].sort((a, b) => a.quantitySold - b.quantitySold).slice(0, 10);
 
         res.json({
             topSelling,
