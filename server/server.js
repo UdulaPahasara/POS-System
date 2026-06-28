@@ -50,10 +50,15 @@ const io = new Server(server, {
 });
 
 // Middleware
-app.use(helmet());
-app.use(mongoSanitize());
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(express.json());
+app.use((req, res, next) => {
+    if (req.body) mongoSanitize.sanitize(req.body, { replaceWith: '_' });
+    if (req.query) mongoSanitize.sanitize(req.query, { replaceWith: '_' });
+    if (req.params) mongoSanitize.sanitize(req.params, { replaceWith: '_' });
+    next();
+});
 
 // Attach socket.io to req object so controllers can use it
 app.use((req, res, next) => {
@@ -280,6 +285,11 @@ connectDB().then(async () => {
         socket.on('disconnect', () => {
             console.log('User disconnected:', socket.id);
         });
+    });
+
+    app.use((err, req, res, next) => {
+        console.error("🔥 GLOBAL ERROR CAUGHT:", err);
+        res.status(500).json({ message: "Internal Server Error", error: err.message, stack: err.stack });
     });
 
     server.listen(PORT, () => {
