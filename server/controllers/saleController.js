@@ -8,6 +8,7 @@ import LoyaltyTransaction from '../model/LoyaltyTransaction.js';
 import User from '../model/User.js';
 import Role from '../model/Role.js';
 import Notification from '../model/Notification.js';
+import Counter from '../model/Counter.js';
 
 // @desc    Create new sale
 // @route   POST /api/sales
@@ -192,15 +193,30 @@ export const createSale = async (req, res) => {
 
         const createdSale = await sale.save();
 
-        const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 });
-        let nextInvoiceNum = 1;
-        
-        if (lastInvoice && lastInvoice.invoiceNumber) {
-            const match = lastInvoice.invoiceNumber.match(/\d+$/);
-            if (match) {
-                nextInvoiceNum = parseInt(match[0], 10) + 1;
+        let counterDoc = await Counter.findById('invoiceNumber');
+        if (!counterDoc) {
+            const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 });
+            let seedValue = 0;
+            if (lastInvoice && lastInvoice.invoiceNumber) {
+                const match = lastInvoice.invoiceNumber.match(/\d+$/);
+                if (match) {
+                    seedValue = parseInt(match[0], 10);
+                }
             }
+            await Counter.findOneAndUpdate(
+                { _id: 'invoiceNumber' },
+                { $setOnInsert: { seq: seedValue } },
+                { upsert: true }
+            );
         }
+
+        counterDoc = await Counter.findByIdAndUpdate(
+            { _id: 'invoiceNumber' },
+            { $inc: { seq: 1 } },
+            { new: true, upsert: true }
+        );
+        
+        const nextInvoiceNum = counterDoc.seq;
         const invoiceNumberStr = nextInvoiceNum.toString().padStart(13, '0');
 
         const invoice = new Invoice({
