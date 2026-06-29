@@ -302,7 +302,20 @@ const PurchaseReturnList = () => {
                                             <Button size="small" variant="outlined" color="info" onClick={() => handleEdit(pr)} sx={{ mr: 1, textTransform: 'none' }}>Edit</Button>
                                         )}
                                         {canApprove && roleName !== 'Inventory Staff' && pr.status === 'Pending' && (
-                                            <Button size="small" variant="outlined" color="success" onClick={() => handleApprove(pr._id)} sx={{ textTransform: 'none' }}>Approve</Button>
+                                            <Button 
+                                                size="small" 
+                                                variant="contained" 
+                                                color="success" 
+                                                onClick={() => handleApprove(pr._id)} 
+                                                sx={{ 
+                                                    textTransform: 'none', 
+                                                    fontWeight: 600, 
+                                                    borderRadius: 2, 
+                                                    boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.3)' 
+                                                }}
+                                            >
+                                                Approve
+                                            </Button>
                                         )}
                                         {canReturn && roleName !== 'Manager' && pr.status === 'Approved' && (
                                             <Button size="small" variant="contained" color="warning" onClick={() => handleShip(pr._id)} sx={{ ml: 1, textTransform: 'none' }}>Ship & Deduct Stock</Button>
