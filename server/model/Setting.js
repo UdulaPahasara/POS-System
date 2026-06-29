@@ -28,6 +28,14 @@ const settingSchema = new mongoose.Schema({
     receiptMessage: {
         type: String,
         default: 'Thank you for your business!'
+    },
+    pointsPerSpend: {
+        type: Number,
+        default: 1000
+    },
+    pointsRedemptionRate: {
+        type: Number,
+        default: 1
     }
 }, { timestamps: true });
 

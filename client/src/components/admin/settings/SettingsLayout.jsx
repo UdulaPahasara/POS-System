@@ -32,7 +32,9 @@ const SettingsLayout = () => {
         storeEmail: '',
         currencySymbol: '',
         defaultTaxRate: 0,
-        receiptMessage: ''
+        receiptMessage: '',
+        pointsPerSpend: 1000,
+        pointsRedemptionRate: 1
     });
 
     const [loading, setLoading] = useState(true);
@@ -54,7 +56,9 @@ const SettingsLayout = () => {
                 storeEmail: data.storeEmail || '',
                 currencySymbol: data.currencySymbol || 'Rs.',
                 defaultTaxRate: data.defaultTaxRate || 0,
-                receiptMessage: data.receiptMessage || ''
+                receiptMessage: data.receiptMessage || '',
+                pointsPerSpend: data.pointsPerSpend || 1000,
+                pointsRedemptionRate: data.pointsRedemptionRate || 1
             });
             setLoading(false);
         } catch (err) {
@@ -84,7 +88,7 @@ const SettingsLayout = () => {
         const { name, value } = e.target;
         setSettings(prev => ({
             ...prev,
-            [name]: name === 'defaultTaxRate' ? Number(value) : value
+            [name]: (name === 'defaultTaxRate' || name === 'pointsPerSpend' || name === 'pointsRedemptionRate') ? Number(value) : value
         }));
     };
 
@@ -277,6 +281,44 @@ const SettingsLayout = () => {
                                             label="Default Tax Rate (%)"
                                             name="defaultTaxRate"
                                             value={settings.defaultTaxRate}
+                                            onChange={handleChange}
+                                            sx={{ 
+                                                '& .MuiInputBase-input': { color: '#fff' }, 
+                                                '& .MuiInputLabel-root': { color: '#cbd5e1' },
+                                                '& .MuiInputLabel-root.Mui-focused': { color: '#60a5fa' },
+                                                '& .MuiOutlinedInput-root': { 
+                                                    '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+                                                    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.4)' }
+                                                }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField
+                                            fullWidth
+                                            type="number"
+                                            label="Points Earned Per Spend (LKR)"
+                                            name="pointsPerSpend"
+                                            value={settings.pointsPerSpend}
+                                            onChange={handleChange}
+                                            sx={{ 
+                                                '& .MuiInputBase-input': { color: '#fff' }, 
+                                                '& .MuiInputLabel-root': { color: '#cbd5e1' },
+                                                '& .MuiInputLabel-root.Mui-focused': { color: '#60a5fa' },
+                                                '& .MuiOutlinedInput-root': { 
+                                                    '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+                                                    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.4)' }
+                                                }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField
+                                            fullWidth
+                                            type="number"
+                                            label="Points Redemption Value (LKR)"
+                                            name="pointsRedemptionRate"
+                                            value={settings.pointsRedemptionRate}
                                             onChange={handleChange}
                                             sx={{ 
                                                 '& .MuiInputBase-input': { color: '#fff' }, 

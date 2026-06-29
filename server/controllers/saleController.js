@@ -9,6 +9,7 @@ import User from '../model/User.js';
 import Role from '../model/Role.js';
 import Notification from '../model/Notification.js';
 import Counter from '../model/Counter.js';
+import Setting from '../model/Setting.js';
 
 // @desc    Create new sale
 // @route   POST /api/sales
@@ -17,6 +18,8 @@ export const createSale = async (req, res) => {
     try {
         const { cartItems, paymentMethod, amountPaid, customer: customerData, pointsRedeemed = 0, orderDiscountType = 'percentage', orderDiscountValue = 0, orderDiscountPercent = 0 } = req.body;
         const branchId = req.user.branch?._id || req.user.branch;
+
+        const settings = await Setting.findOne() || { pointsPerSpend: 1000, pointsRedemptionRate: 1 };
 
         if (!branchId) {
             return res.status(400).json({ message: 'User must be assigned to a branch to make a sale' });
@@ -151,7 +154,7 @@ export const createSale = async (req, res) => {
                 if (pointsToRedeem > currentPoints) {
                     return res.status(400).json({ message: 'Not enough loyalty points' });
                 }
-                const pointsDiscountAmount = pointsToRedeem;
+                const pointsDiscountAmount = pointsToRedeem * (settings.pointsRedemptionRate || 1);
                 finalTotal = Math.max(0, finalTotal - pointsDiscountAmount);
             } else {
                 pointsToRedeem = 0;
@@ -162,7 +165,8 @@ export const createSale = async (req, res) => {
 
         let pointsEarned = 0;
         if (customerRecord) {
-            pointsEarned = Math.floor(finalTotal / 1000);
+            const spendThreshold = settings.pointsPerSpend || 1000;
+            pointsEarned = Math.floor(finalTotal / spendThreshold);
         }
 
         const change = paymentMethod === 'Cash' ? Number(Math.max(0, amountPaid - finalTotal).toFixed(2)) : 0;

@@ -31,7 +31,9 @@ export const updateSettings = async (req, res) => {
             storeEmail, 
             currencySymbol, 
             defaultTaxRate, 
-            receiptMessage 
+            receiptMessage,
+            pointsPerSpend,
+            pointsRedemptionRate
         } = req.body;
 
         let settings = await Setting.findOne();
@@ -44,6 +46,8 @@ export const updateSettings = async (req, res) => {
             settings.currencySymbol = currencySymbol !== undefined ? currencySymbol : settings.currencySymbol;
             settings.defaultTaxRate = defaultTaxRate !== undefined ? defaultTaxRate : settings.defaultTaxRate;
             settings.receiptMessage = receiptMessage !== undefined ? receiptMessage : settings.receiptMessage;
+            settings.pointsPerSpend = pointsPerSpend !== undefined ? pointsPerSpend : settings.pointsPerSpend;
+            settings.pointsRedemptionRate = pointsRedemptionRate !== undefined ? pointsRedemptionRate : settings.pointsRedemptionRate;
 
             const updatedSettings = await settings.save();
             res.json(updatedSettings);
