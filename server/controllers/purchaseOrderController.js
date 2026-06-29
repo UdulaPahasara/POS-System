@@ -192,9 +192,13 @@ export const receiveGoods = async (req, res) => {
             return res.status(400).json({ message: `Cannot receive goods for PO in ${po.status} status` });
         }
 
+        const productIds = po.items.map(item => item.product ? item.product._id : null).filter(id => id);
+        const productsToUpdate = await Product.find({ _id: { $in: productIds } });
+        const bulkOps = [];
+
         for (const item of po.items) {
             if (item.product) {
-                const product = await Product.findById(item.product._id);
+                const product = productsToUpdate.find(p => p._id.toString() === item.product._id.toString());
                 if (product) {
                     let bDataIndex = product.branchData.findIndex(b => b.branch.toString() === po.branch.toString());
                     if (bDataIndex === -1) {
@@ -202,9 +206,19 @@ export const receiveGoods = async (req, res) => {
                         bDataIndex = product.branchData.length - 1;
                     }
                     product.branchData[bDataIndex].stock += item.quantity;
-                    await product.save();
+
+                    bulkOps.push({
+                        updateOne: {
+                            filter: { _id: product._id },
+                            update: { $set: { branchData: product.branchData } }
+                        }
+                    });
                 }
             }
+        }
+
+        if (bulkOps.length > 0) {
+            await Product.bulkWrite(bulkOps);
         }
 
         po.status = 'Received';

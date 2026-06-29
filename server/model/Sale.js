@@ -97,6 +97,7 @@ const saleSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+saleSchema.index({ branch: 1, createdAt: -1 });
 
 const Sale = mongoose.model('Sale', saleSchema);
 
