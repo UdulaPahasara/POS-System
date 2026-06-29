@@ -3,6 +3,7 @@ import Product from '../model/Product.js';
 import User from '../model/User.js';
 import Role from '../model/Role.js';
 import Notification from '../model/Notification.js';
+import { isAdminRole, getRoleName } from '../utils/authUtils.js';
 
 export const updatePurchaseOrder = async (req, res) => {
     try {
@@ -36,11 +37,7 @@ export const updatePurchaseOrder = async (req, res) => {
 export const getPurchaseOrders = async (req, res) => {
     try {
         let filter = {};
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         if (!isAdmin) {
             if (!req.user.branch) return res.status(403).json({ message: 'No branch assigned' });
@@ -150,10 +147,7 @@ export const approvePurchaseOrder = async (req, res) => {
             ]
         });
 
-        let currentActorRole = 'Manager';
-        if (req.user && req.user.role) {
-            currentActorRole = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-        }
+        let currentActorRole = getRoleName(req.user) || 'Manager';
 
         for (const user of usersToNotify) {
             const notif = await Notification.create({
@@ -235,10 +229,7 @@ export const receiveGoods = async (req, res) => {
             ]
         });
 
-        let currentActorRole = 'Inventory Staff';
-        if (req.user && req.user.role) {
-            currentActorRole = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-        }
+        let currentActorRole = getRoleName(req.user) || 'Inventory Staff';
 
         for (const userToNotify of usersToNotify) {
             const notif = await Notification.create({

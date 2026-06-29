@@ -3,6 +3,7 @@ import InventoryLog from '../model/InventoryLog.js';
 import Notification from '../model/Notification.js';
 import User from '../model/User.js';
 import Role from '../model/Role.js';
+import { isAdminRole } from '../utils/authUtils.js';
 
 // @desc    Create a new product
 // @route   POST /api/products
@@ -103,11 +104,7 @@ export const getProducts = async (req, res) => {
             .sort({ createdAt: -1 });
 
         let branchId = req.user.branch;
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         // Allow any role to request the global catalog if explicitly requested
         if (req.query.branchId === 'global') {

@@ -3,6 +3,7 @@ import Product from '../model/Product.js';
 import Invoice from '../model/Invoice.js';
 import Customer from '../model/Customer.js';
 import mongoose from 'mongoose';
+import { isAdminRole } from '../utils/authUtils.js';
 
 // @desc    Get Dashboard Overview Stats
 // @route   GET /api/reports/dashboard
@@ -14,11 +15,7 @@ export const getDashboardStats = async (req, res) => {
         today.setHours(0, 0, 0, 0);
 
         let branchFilter = {};
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
         if (!isAdmin) {
             if (req.user.branch) branchFilter.branch = new mongoose.Types.ObjectId(req.user.branch);
         } else if (branchId && mongoose.Types.ObjectId.isValid(branchId)) {
@@ -227,11 +224,7 @@ export const getSalesReport = async (req, res) => {
             };
         }
 
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         if (!isAdmin && req.user && req.user.branch) {
             query.branch = new mongoose.Types.ObjectId(req.user.branch);
@@ -286,11 +279,7 @@ export const getInventoryReport = async (req, res) => {
         const { branchId } = req.query;
         let products = await Product.find({ isActive: { $ne: false } });
         
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         let effectiveBranchId = branchId;
         if (!isAdmin && req.user && req.user.branch) {
@@ -361,11 +350,7 @@ export const getAdvancedSalesReport = async (req, res) => {
         if (interval === 'monthly') format = '%Y-%m';
         if (interval === 'yearly') format = '%Y';
 
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         let matchStage = {};
         if (!isAdmin && req.user && req.user.branch) {
@@ -401,11 +386,7 @@ export const getFinancialReport = async (req, res) => {
     try {
         const { branchId } = req.query;
         
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         let query = {};
         if (!isAdmin && req.user && req.user.branch) {
@@ -469,11 +450,7 @@ export const getProductReport = async (req, res) => {
     try {
         const { branchId } = req.query;
         
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         let query = {};
         if (!isAdmin && req.user && req.user.branch) {
@@ -535,11 +512,7 @@ export const getCustomerReport = async (req, res) => {
         const { branchId } = req.query;
         let query = { "customer.name": { $exists: true, $ne: null } };
         
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         if (!isAdmin && req.user && req.user.branch) {
             query.branch = new mongoose.Types.ObjectId(req.user.branch);

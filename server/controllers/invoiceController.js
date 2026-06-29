@@ -1,4 +1,5 @@
 import Invoice from '../model/Invoice.js';
+import { isAdminRole } from '../utils/authUtils.js';
 
 // @desc    Get all invoices
 // @route   GET /api/invoices
@@ -6,12 +7,7 @@ import Invoice from '../model/Invoice.js';
 export const getInvoices = async (req, res) => {
     try {
         let branchId = req.user.branch;
-        let isAdmin = false;
-        
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         if (isAdmin) {
             if (req.query.branchId === 'global') {

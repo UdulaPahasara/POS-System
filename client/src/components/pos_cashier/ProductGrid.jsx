@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, TextField, InputAdornment, Grid, Card, CardContent, CardMedia, Chip } from '@mui/material';
+import { Box, Typography, TextField, InputAdornment, Grid, Card, CardContent, CardMedia, Chip, Avatar } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 
 const ProductGrid = ({ products, onAddToCart, customerSelectorNode }) => {
@@ -10,6 +10,16 @@ const ProductGrid = ({ products, onAddToCart, customerSelectorNode }) => {
     
     // Extract unique categories
     const categories = ['All', ...new Set(products.map(p => getCategoryName(p.category) || 'Unknown'))];
+
+    // Generate dynamic color for placeholders
+    const getAvatarColor = (name) => {
+        const colors = ['#f43f5e', '#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6', '#eab308'];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    };
 
     // Filter products
     const filteredProducts = products.filter(p => {
@@ -115,8 +125,17 @@ const ProductGrid = ({ products, onAddToCart, customerSelectorNode }) => {
                                     sx={{ objectFit: 'contain', bgcolor: '#fff', p: 1 }}
                                 />
                             ) : (
-                                <Box sx={{ height: 120, bgcolor: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Typography variant="caption" sx={{ color: '#94a3b8' }}>No Image</Typography>
+                                <Box sx={{ height: 120, bgcolor: getAvatarColor(product.name) + '20', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Avatar sx={{ 
+                                        width: 60, 
+                                        height: 60, 
+                                        bgcolor: getAvatarColor(product.name),
+                                        fontSize: '2rem',
+                                        fontWeight: 700,
+                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
+                                    }}>
+                                        {product.name.charAt(0).toUpperCase()}
+                                    </Avatar>
                                 </Box>
                             )}
                             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>

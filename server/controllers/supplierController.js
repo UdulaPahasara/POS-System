@@ -3,14 +3,11 @@ import PurchaseOrder from '../model/PurchaseOrder.js';
 import Role from '../model/Role.js';
 import User from '../model/User.js';
 import Notification from '../model/Notification.js';
+import { isAdminRole, getRoleName } from '../utils/authUtils.js';
 
 export const getSuppliers = async (req, res) => {
     try {
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin' || roleName === 'Super Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         let query = {};
         if (!isAdmin && req.user && req.user.branch) {
@@ -32,10 +29,7 @@ export const createSupplier = async (req, res) => {
     try {
         const supplier = await Supplier.create(req.body);
 
-        let currentActorRole = 'Inventory Staff';
-        if (req.user && req.user.role) {
-            currentActorRole = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-        }
+        let currentActorRole = getRoleName(req.user) || 'Inventory Staff';
 
         if (currentActorRole !== 'Admin') {
             const rolesToNotify = await Role.find({ roleName: 'Admin' });
@@ -71,10 +65,7 @@ export const updateSupplier = async (req, res) => {
         const supplier = await Supplier.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!supplier) return res.status(404).json({ message: 'Supplier not found' });
 
-        let currentActorRole = 'Inventory Staff';
-        if (req.user && req.user.role) {
-            currentActorRole = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-        }
+        let currentActorRole = getRoleName(req.user) || 'Inventory Staff';
 
         if (currentActorRole !== 'Admin') {
             const rolesToNotify = await Role.find({ roleName: 'Admin' });

@@ -4,6 +4,7 @@ import InventoryLog from '../model/InventoryLog.js';
 import User from '../model/User.js';
 import Role from '../model/Role.js';
 import Notification from '../model/Notification.js';
+import { isAdminRole, getRoleName } from '../utils/authUtils.js';
 
 export const updatePurchaseReturn = async (req, res) => {
     try {
@@ -32,11 +33,7 @@ export const updatePurchaseReturn = async (req, res) => {
 export const getPurchaseReturns = async (req, res) => {
     try {
         let filter = {};
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         if (!isAdmin) {
             if (!req.user.branch) return res.status(403).json({ message: 'No branch assigned' });
@@ -89,10 +86,7 @@ export const createPurchaseReturn = async (req, res) => {
             ]
         });
 
-        let currentActorRole = 'Inventory Staff';
-        if (req.user && req.user.role) {
-            currentActorRole = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-        }
+        let currentActorRole = getRoleName(req.user) || 'Inventory Staff';
 
         for (const user of usersToNotify) {
             const notif = await Notification.create({
@@ -146,10 +140,7 @@ export const approvePurchaseReturn = async (req, res) => {
             ]
         });
 
-        let currentActorRole = 'Manager';
-        if (req.user && req.user.role) {
-            currentActorRole = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-        }
+        let currentActorRole = getRoleName(req.user) || 'Manager';
 
         for (const user of usersToNotify) {
             const notif = await Notification.create({
@@ -225,10 +216,7 @@ export const shipPurchaseReturn = async (req, res) => {
             ]
         });
 
-        let currentActorRole = 'Inventory Staff';
-        if (req.user && req.user.role) {
-            currentActorRole = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-        }
+        let currentActorRole = getRoleName(req.user) || 'Inventory Staff';
 
         for (const userToNotify of usersToNotify) {
             const notif = await Notification.create({

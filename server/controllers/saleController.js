@@ -10,6 +10,7 @@ import Role from '../model/Role.js';
 import Notification from '../model/Notification.js';
 import Counter from '../model/Counter.js';
 import Setting from '../model/Setting.js';
+import { isAdminRole, getRoleName } from '../utils/authUtils.js';
 
 // @desc    Create new sale
 // @route   POST /api/sales
@@ -283,11 +284,7 @@ export const getSales = async (req, res) => {
         let filter = {};
         
         // Is user an Admin? If not, restrict to their own branch.
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         if (!isAdmin) {
             if (!req.user.branch) return res.status(403).json({ message: 'No branch assigned' });
@@ -325,11 +322,7 @@ export const getSalesByCustomer = async (req, res) => {
 
         let filter = { 'customer.phone': customer.phone };
         
-        let isAdmin = false;
-        if (req.user && req.user.role) {
-            const roleName = typeof req.user.role === 'object' ? req.user.role.roleName : req.user.role;
-            if (roleName === 'Admin') isAdmin = true;
-        }
+        let isAdmin = isAdminRole(req.user);
 
         if (!isAdmin) {
             if (!req.user.branch) return res.status(403).json({ message: 'No branch assigned' });
