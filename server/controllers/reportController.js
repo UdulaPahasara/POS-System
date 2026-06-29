@@ -62,6 +62,7 @@ export const getDashboardStats = async (req, res) => {
             const branchObjectId = branchFilter.branch;
             
             const stockAgg = await Product.aggregate([
+                { $match: { isActive: { $ne: false } } },
                 { $unwind: "$branchData" },
                 { $match: { "branchData.branch": branchObjectId } },
                 { $group: { _id: null, totalStock: { $sum: '$branchData.stock' } } }
@@ -69,6 +70,7 @@ export const getDashboardStats = async (req, res) => {
             itemsInStock = stockAgg[0]?.totalStock || 0;
 
             const lowStockRaw = await Product.aggregate([
+                { $match: { isActive: { $ne: false } } },
                 { $unwind: "$branchData" },
                 { $match: { "branchData.branch": branchObjectId } },
                 { $match: { $expr: { $lte: ['$branchData.stock', '$reorderLevel'] } } },
@@ -82,12 +84,14 @@ export const getDashboardStats = async (req, res) => {
             }));
         } else {
             const stockAgg = await Product.aggregate([
+                { $match: { isActive: { $ne: false } } },
                 { $unwind: "$branchData" },
                 { $group: { _id: null, totalStock: { $sum: '$branchData.stock' } } }
             ]);
             itemsInStock = stockAgg[0]?.totalStock || 0;
 
             const lowStockRaw = await Product.aggregate([
+                { $match: { isActive: { $ne: false } } },
                 { $unwind: "$branchData" },
                 { $match: { $expr: { $lte: ['$branchData.stock', '$reorderLevel'] } } },
                 { $limit: 5 }
@@ -280,7 +284,7 @@ export const getSalesReport = async (req, res) => {
 export const getInventoryReport = async (req, res) => {
     try {
         const { branchId } = req.query;
-        let products = await Product.find({});
+        let products = await Product.find({ isActive: { $ne: false } });
         
         let isAdmin = false;
         if (req.user && req.user.role) {
