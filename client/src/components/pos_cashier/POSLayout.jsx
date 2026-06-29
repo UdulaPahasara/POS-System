@@ -145,9 +145,13 @@ const POSLayout = () => {
     };
 
     const clearCart = () => {
-        if(window.confirm('Are you sure you want to void this order?')) {
-            setCartItems([]);
-        }
+        if (cartItems.length === 0) return;
+        setConfirmDialogConfig({
+            title: 'Void Order',
+            message: 'Are you sure you want to void this entire order? This action cannot be undone.',
+            onConfirm: () => setCartItems([])
+        });
+        setConfirmDialogOpen(true);
     };
 
     const handleCheckout = () => {
