@@ -3,9 +3,6 @@ import Product from '../model/Product.js';
 import Sale from '../model/Sale.js';
 import Customer from '../model/Customer.js';
 
-// Initialize the Google Gen AI SDK
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 // @desc    Chat with AI Assistant
 // @route   POST /api/chat
 // @access  Private
@@ -132,6 +129,9 @@ Instructions for you:
         if (!process.env.GEMINI_API_KEY) {
             throw new Error("GEMINI_API_KEY is missing. Did you restart the server after adding it to .env?");
         }
+
+        // Initialize the Google Gen AI SDK here to ensure env vars are loaded
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
         // 4. Call the Gemini API
         const response = await ai.models.generateContent({
