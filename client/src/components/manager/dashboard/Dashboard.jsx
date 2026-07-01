@@ -335,7 +335,6 @@ const Dashboard = () => {
                                     <TableRow>
                                         <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Product</TableCell>
                                         <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.05)' }} align="center">Stock</TableCell>
-                                        <TableCell sx={{ color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.05)' }} align="right">Action</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -347,11 +346,6 @@ const Dashboard = () => {
                                             </TableCell>
                                             <TableCell align="center" sx={{ color: '#ef4444', borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 700 }}>
                                                 {row.stock} / {row.reorder}
-                                            </TableCell>
-                                            <TableCell align="right" sx={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                <Button size="small" variant="outlined" sx={{ borderColor: '#3b82f6', color: '#3b82f6', textTransform: 'none' }}>
-                                                    Reorder
-                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))}
