@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { 
     Box, Fab, Paper, Typography, IconButton, TextField, 
     Button, CircularProgress, Fade
@@ -18,6 +19,7 @@ const ChatbotWidget = () => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
+    const location = useLocation();
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -55,7 +57,15 @@ const ChatbotWidget = () => {
 
     // Only show if user is logged in
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    if (!token) return null;
+    
+    // Determine user role
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const userRoleObj = user?.role;
+    const userRole = typeof userRoleObj === 'object' ? userRoleObj?.roleName : (userRoleObj || 'Admin');
+
+    // Hide if no token OR if the user is a Cashier
+    if (!token || userRole === 'Cashier') return null;
 
     return (
         <>
