@@ -26,9 +26,10 @@ export const chatWithAI = async (req, res) => {
         // ─── Role / branch detection ─────────────────────────────────────────────
         const roleName = req.user.role ? (req.user.role.roleName || req.user.role) : null;
         const isAdminOrManager = roleName === 'Admin' || roleName === 'Manager' || roleName === 'Super Admin';
+        const isAdmin = roleName === 'Admin' || roleName === 'Super Admin';
 
-        // Cashiers / Inventory Staff are scoped to their branch; Admins & Managers see global data
-        const branchId = isAdminOrManager ? null : req.user.branch;
+        // Cashiers / Inventory Staff and Managers are scoped to their branch; Admins see global data
+        const branchId = isAdmin ? null : req.user.branch;
         const branchIdStr = branchId
             ? (branchId._id ? branchId._id.toString() : branchId.toString())
             : null;
@@ -214,7 +215,7 @@ Payment Method Breakdown (All Time):
 
         // Low stock calculation (matching the dashboard's logic exactly)
         let lowStockRaw = [];
-        if (isAdminOrManager) {
+        if (isAdmin) {
             lowStockRaw = await Product.aggregate([
                 { $match: { isActive: { $ne: false } } },
                 { $unwind: "$branchData" },
