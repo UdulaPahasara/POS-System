@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import mongoose from 'mongoose';
 import Product from '../model/Product.js';
 import Sale from '../model/Sale.js';
 import Customer from '../model/Customer.js';
@@ -25,7 +26,7 @@ export const chatWithAI = async (req, res) => {
 
         // ─── Role / branch detection ─────────────────────────────────────────────
         const roleName = req.user.role ? (req.user.role.roleName || req.user.role) : null;
-        const isAdminOrManager = roleName === 'Admin' || roleName === 'Manager' || roleName === 'Super Admin';
+        const isAdminOrManager = roleName === 'Admin' || roleName === 'Manager' || roleName === 'Super Admin' || (roleName && roleName.includes('Manager'));
         const isAdmin = roleName === 'Admin' || roleName === 'Super Admin';
 
         // Cashiers / Inventory Staff and Managers are scoped to their branch; Admins see global data
@@ -33,9 +34,11 @@ export const chatWithAI = async (req, res) => {
         const branchIdStr = branchId
             ? (branchId._id ? branchId._id.toString() : branchId.toString())
             : null;
+            
+        const mongooseBranchId = branchIdStr ? new mongoose.Types.ObjectId(branchIdStr) : null;
 
         // Build Mongoose match clause for branch-scoped queries
-        const branchMatch = branchIdStr ? { branch: branchId } : {};
+        const branchMatch = mongooseBranchId ? { branch: mongooseBranchId } : {};
 
         // ─── 1. Basic counts ─────────────────────────────────────────────────────
         const productCount = await Product.countDocuments({ isActive: { $ne: false } });
@@ -235,7 +238,7 @@ Payment Method Breakdown (All Time):
             lowStockRaw = await Product.aggregate([
                 { $match: { isActive: { $ne: false } } },
                 { $unwind: "$branchData" },
-                { $match: { "branchData.branch": branchId } },
+                { $match: { "branchData.branch": mongooseBranchId } },
                 { $match: { $expr: { $lte: ['$branchData.stock', '$reorderLevel'] } } },
                 {
                     $lookup: {
