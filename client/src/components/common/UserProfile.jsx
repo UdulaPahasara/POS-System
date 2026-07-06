@@ -256,6 +256,21 @@ const UserProfile = () => {
                             {roleName}
                         </Box>
 
+                        {user?.branch && (
+                            <Box sx={{ 
+                                px: 2, 
+                                py: 0.5, 
+                                mt: 1,
+                                bgcolor: 'rgba(16, 185, 129, 0.1)', 
+                                color: '#10b981', 
+                                borderRadius: 2,
+                                fontWeight: 600,
+                                display: 'inline-block'
+                            }}>
+                                Branch: {user.branch.name || user.branch}
+                            </Box>
+                        )}
+
                         <Divider sx={{ width: '100%', my: 3, borderColor: 'rgba(255,255,255,0.05)' }} />
                         
                         <Box sx={{ width: '100%' }}>

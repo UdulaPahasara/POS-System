@@ -193,6 +193,7 @@ const AdminHeader = ({ handleDrawerToggle }) => {
                             </Typography>
                             <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                                 {user?.role && typeof user.role === 'object' ? user.role.roleName : (user?.role || 'Administrator')}
+                                {user?.branch && ` • ${user.branch.name || user.branch}`}
                             </Typography>
                         </Box>
                     </Box>

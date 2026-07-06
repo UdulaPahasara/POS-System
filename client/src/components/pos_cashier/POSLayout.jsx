@@ -352,6 +352,7 @@ const POSLayout = () => {
                             </Typography>
                             <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                                 {userRoleName}
+                                {user?.branch && ` • ${user.branch.name || user.branch}`}
                             </Typography>
                         </Box>
                     </Box>
