@@ -136,25 +136,6 @@ const AdminHeader = ({ handleDrawerToggle }) => {
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
-                    {/* Search Bar */}
-                    <Paper
-                        elevation={0}
-                        sx={{ 
-                            p: '2px 10px', 
-                            display: { xs: 'none', md: 'flex' }, 
-                            alignItems: 'center', 
-                            width: 250,
-                            bgcolor: 'rgba(255,255,255,0.05)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: 2
-                        }}
-                    >
-                        <SearchIcon sx={{ color: '#94a3b8', mr: 1 }} />
-                        <InputBase
-                            placeholder="Search..."
-                            sx={{ ml: 1, flex: 1, color: '#fff', fontSize: '0.9rem' }}
-                        />
-                    </Paper>
 
                     {/* Notifications */}
                     <IconButton color="inherit" onClick={handleOpenNotifications}>
